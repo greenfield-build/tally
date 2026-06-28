@@ -1,0 +1,23 @@
+# Internal/private — do not deploy
+PROJECT_SHEET.md
+SUPABASE-SETUP.md
+supabase-schema.sql
+app.html
+mockups/
+dist/
+
+# Admin scripts (use tokens via env)
+.deploy-tally.py
+.disable-email-confirm.py
+.run-schema.py
+.verify-supabase.py
+
+# OS junk
+.DS_Store
+Thumbs.db
+*:Zone.Identifier
+
+# Editor
+.vscode/
+*.swp
+node_modules/

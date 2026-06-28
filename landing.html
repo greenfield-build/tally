@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Tally — Personal Budget &amp; Bill Tracker That Actually Fits Real Life</title>
+<meta name="description" content="Tally is a clean, fast personal budget app for tracking bills, debt, income, and savings goals. Cloud-synced, no spreadsheet skills required. $29 once. By Greenfield." />
+
+<!-- Open Graph -->
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Tally by Greenfield" />
+<meta property="og:title" content="Tally — Personal Budget That Actually Fits Real Life" />
+<meta property="og:description" content="The personal budget app that doesn't make you feel like a failure for buying coffee. $29 once. Cloud-synced. Yours forever." />
+<meta property="og:url" content="https://tally.greenfield.build" />
+
+<meta name="theme-color" content="#FAFAF6" />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><rect width='32' height='32' rx='6' fill='%23FAFAF6'/><line x1='6' y1='10' x2='26' y2='10' stroke='%2316A34A' stroke-width='2.6' stroke-linecap='round' opacity='0.35'/><line x1='6' y1='15' x2='26' y2='15' stroke='%2316A34A' stroke-width='2.6' stroke-linecap='round' opacity='0.6'/><line x1='6' y1='20' x2='26' y2='20' stroke='%2316A34A' stroke-width='2.6' stroke-linecap='round' opacity='0.85'/><line x1='6' y1='25' x2='26' y2='25' stroke='%2316A34A' stroke-width='2.6' stroke-linecap='round'/></svg>" />
+
+<style>
+  :root{
+    --bg:#FAFAF6; --bg-soft:#F2F2EC; --surface:#FFFFFF;
+    --ink:#0A0A0A; --ink-muted:rgba(10,10,10,0.55);
+    --line:rgba(10,10,10,0.08); --line-strong:rgba(10,10,10,0.14);
+    --green:#16A34A; --green-deep:#15803D; --green-soft:rgba(22,163,74,0.08);
+    --blue:#2E7AFF;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,'Inter','Segoe UI',Roboto,sans-serif;
+    line-height:1.55;-webkit-font-smoothing:antialiased;
+    font-feature-settings:"ss01","cv11";
+  }
+  a{color:inherit;text-decoration:none}
+  ::selection{background:var(--green);color:#fff}
+  .container{max-width:1180px;margin:0 auto;padding:0 24px}
+
+  /* NAV */
+  header.nav{
+    position:sticky;top:0;z-index:50;
+    background:rgba(250,250,246,0.85);
+    backdrop-filter:saturate(180%) blur(12px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav-inner{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 24px;max-width:1180px;margin:0 auto;
+  }
+  .wordmark{font-weight:800;font-size:1.1rem;letter-spacing:-0.02em;display:flex;align-items:center;gap:10px}
+  .wordmark svg{flex-shrink:0}
+  .nav-cta{
+    background:var(--ink);color:#fff;
+    padding:10px 18px;border-radius:8px;font-size:0.88rem;font-weight:700;
+    transition:background .2s, transform .15s;
+  }
+  .nav-cta:hover{background:var(--green-deep);transform:translateY(-1px)}
+
+  /* HERO — dark */
+  .hero{
+    padding:110px 0 130px;position:relative;overflow:hidden;
+    background:#0A0A0A;color:#fff;
+  }
+  .hero::before{
+    content:"";position:absolute;inset:0;
+    background:
+      radial-gradient(800px 400px at 20% 30%, rgba(22,163,74,0.20), transparent 70%),
+      radial-gradient(600px 400px at 80% 70%, rgba(22,163,74,0.14), transparent 70%);
+    pointer-events:none;
+  }
+  .hero::after{
+    content:"";position:absolute;inset:0;
+    background-image:linear-gradient(rgba(255,255,255,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.04) 1px,transparent 1px);
+    background-size:48px 48px;
+    mask-image:radial-gradient(ellipse 60% 60% at 50% 40%, #000 30%, transparent 80%);
+    -webkit-mask-image:radial-gradient(ellipse 60% 60% at 50% 40%, #000 30%, transparent 80%);
+    pointer-events:none;
+  }
+  .hero .container{position:relative;z-index:1}
+  .eyebrow{
+    display:inline-block;font-size:0.78rem;font-weight:600;letter-spacing:0.14em;text-transform:uppercase;
+    color:#4ADE80;padding:6px 14px;border:1px solid rgba(255,255,255,0.18);
+    border-radius:999px;background:rgba(22,163,74,0.14);margin-bottom:30px;
+  }
+  .hero h1{
+    font-size:clamp(2.6rem,7vw,5.4rem);
+    font-weight:800;letter-spacing:-0.04em;line-height:1.02;
+    margin-bottom:26px;max-width:1000px;color:#fff;
+  }
+  .hero h1 .accent{color:#4ADE80}
+  .hero p.lead{
+    font-size:clamp(1.05rem,1.5vw,1.2rem);
+    color:rgba(255,255,255,0.7);max-width:640px;margin-bottom:42px;
+  }
+  .cta-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;
+    padding:14px 24px;border-radius:10px;font-size:0.98rem;font-weight:700;
+    cursor:pointer;border:none;font-family:inherit;
+    transition:transform .15s, background .2s, box-shadow .2s, border-color .2s;
+  }
+  .btn-primary{background:#fff;color:#0A0A0A}
+  .btn-primary:hover{background:#16A34A;color:#fff;transform:translateY(-1px);box-shadow:0 10px 28px rgba(22,163,74,0.4)}
+  .btn-secondary{background:transparent;color:#fff;border:1px solid rgba(255,255,255,0.22)}
+  .btn-secondary:hover{border-color:#fff;background:rgba(255,255,255,0.08);transform:translateY(-1px)}
+  .price-badge{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:0.85rem;color:rgba(255,255,255,0.7);margin-left:8px;
+  }
+  .price-badge b{color:#fff;font-weight:700}
+
+  /* SECTIONS */
+  section{padding:90px 0;border-top:1px solid var(--line)}
+  .section-head{text-align:center;margin-bottom:60px;max-width:680px;margin-left:auto;margin-right:auto}
+  .section-label{
+    display:inline-block;font-size:0.74rem;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;
+    color:var(--green-deep);margin-bottom:14px;
+  }
+  .section-head h2{
+    font-size:clamp(2rem,4vw,3rem);font-weight:800;letter-spacing:-0.03em;line-height:1.05;margin-bottom:16px;
+  }
+  .section-head p{color:var(--ink-muted);font-size:1.05rem}
+
+  /* FEATURES grid */
+  #features{background:var(--bg-soft)}
+  .features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+  @media(max-width:880px){.features-grid{grid-template-columns:1fr}}
+  .feature{
+    background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:30px 26px;
+    transition:transform .2s, border-color .2s;
+  }
+  .feature:hover{transform:translateY(-3px);border-color:var(--green)}
+  .feature .icon{
+    width:48px;height:48px;border-radius:11px;
+    background:var(--green-soft);color:var(--green-deep);
+    display:flex;align-items:center;justify-content:center;
+    font-size:1.4rem;font-weight:800;margin-bottom:20px;
+    border:1px solid rgba(22,163,74,0.18);
+  }
+  .feature h3{font-size:1.2rem;font-weight:800;letter-spacing:-0.015em;margin-bottom:8px}
+  .feature p{color:var(--ink-muted);font-size:0.95rem}
+
+  /* COMPARISON */
+  .compare{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0;background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  @media(max-width:760px){.compare{grid-template-columns:1fr}}
+  .compare-col{padding:28px 22px;border-right:1px solid var(--line)}
+  .compare-col:last-child{border-right:0}
+  .compare-col.highlight{background:var(--green-soft)}
+  .compare-col h4{font-size:1.05rem;font-weight:800;margin-bottom:6px}
+  .compare-col .price{font-size:1.4rem;font-weight:800;letter-spacing:-0.02em;color:var(--green-deep);margin-bottom:14px}
+  .compare-col ul{list-style:none}
+  .compare-col li{padding:7px 0;font-size:0.88rem;color:var(--ink-muted);display:flex;align-items:flex-start;gap:8px}
+  .compare-col li::before{content:"";flex-shrink:0;width:14px;height:14px;border-radius:50%;background:var(--green-soft);color:var(--green-deep);display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;margin-top:3px}
+  .compare-col li.no::before{background:rgba(220,38,38,0.1);content:"–"}
+  .compare-col li.yes::before{content:"✓";color:var(--green-deep)}
+
+  /* PRICING */
+  #pricing{background:var(--bg-soft)}
+  .pricing-card{
+    max-width:480px;margin:0 auto;
+    background:var(--surface);border:2px solid var(--green);border-radius:18px;
+    padding:40px 36px;text-align:center;
+    box-shadow:0 20px 60px rgba(22,163,74,0.10);
+  }
+  .pricing-card h3{font-size:1.4rem;font-weight:800;letter-spacing:-0.02em;margin-bottom:6px}
+  .pricing-card .sub{color:var(--ink-muted);margin-bottom:24px}
+  .pricing-card .price{
+    font-size:3.6rem;font-weight:900;letter-spacing:-0.035em;line-height:1;margin-bottom:6px;
+  }
+  .pricing-card .price span{font-size:1.2rem;font-weight:600;color:var(--ink-muted);vertical-align:super;margin-right:4px}
+  .pricing-card .once{color:var(--ink-muted);font-size:0.95rem;margin-bottom:28px;font-weight:600}
+  .pricing-card .features{text-align:left;margin-bottom:30px}
+  .pricing-card .features li{padding:6px 0;font-size:0.95rem;display:flex;align-items:center;gap:10px}
+  .pricing-card .features li::before{content:"✓";color:var(--green-deep);font-weight:800;font-size:1.05rem}
+  .pricing-card .btn{width:100%;padding:16px;font-size:1.05rem;background:var(--ink);color:#fff}
+  .pricing-card .btn:hover{background:var(--green-deep)}
+  .pricing-card .guarantee{margin-top:18px;font-size:0.85rem;color:var(--ink-muted)}
+
+  /* FAQ */
+  details.faq{
+    background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:0;margin-bottom:10px;
+  }
+  details.faq summary{
+    padding:20px 22px;cursor:pointer;font-weight:700;font-size:1rem;letter-spacing:-0.01em;
+    list-style:none;display:flex;justify-content:space-between;align-items:center;
+  }
+  details.faq summary::-webkit-details-marker{display:none}
+  details.faq summary::after{content:"+";font-size:1.5rem;color:var(--green-deep);font-weight:300;transition:transform .2s}
+  details.faq[open] summary::after{transform:rotate(45deg)}
+  details.faq[open] summary{border-bottom:1px solid var(--line)}
+  details.faq .answer{padding:18px 22px;color:var(--ink-muted);font-size:0.95rem;line-height:1.65}
+
+  /* CTA FINAL */
+  .cta-final{background:var(--ink);color:#fff;text-align:center;padding:90px 24px}
+  .cta-final h2{font-size:clamp(2rem,4vw,2.8rem);font-weight:800;letter-spacing:-0.03em;margin-bottom:14px}
+  .cta-final p{color:rgba(255,255,255,0.7);font-size:1.1rem;margin-bottom:32px;max-width:580px;margin-left:auto;margin-right:auto}
+  .cta-final .btn{background:#fff;color:#0A0A0A;padding:16px 32px;font-size:1.05rem}
+  .cta-final .btn:hover{background:#16A34A;color:#fff}
+
+  /* FOOTER */
+  footer{padding:40px 0 50px;text-align:center;color:var(--ink-muted);font-size:0.88rem;border-top:1px solid var(--line)}
+  footer .wordmark{justify-content:center;margin-bottom:10px}
+  footer a{color:var(--green-deep);font-weight:600}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a href="#" class="wordmark" aria-label="Tally home">
+      <svg width="30" height="30" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <line x1="4" y1="9" x2="28" y2="9" stroke="#16A34A" stroke-width="2.6" stroke-linecap="round" opacity="0.35"/>
+        <line x1="4" y1="15" x2="28" y2="15" stroke="#16A34A" stroke-width="2.6" stroke-linecap="round" opacity="0.6"/>
+        <line x1="4" y1="21" x2="28" y2="21" stroke="#16A34A" stroke-width="2.6" stroke-linecap="round" opacity="0.85"/>
+        <line x1="4" y1="27" x2="28" y2="27" stroke="#16A34A" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+      Tally
+    </a>
+    <a href="#pricing" class="nav-cta">Get Tally — $29</a>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="container">
+    <span class="eyebrow">Personal Budget · By Greenfield</span>
+    <h1>The budget app that<br><span class="accent">actually fits</span><br>how real life works.</h1>
+    <p class="lead">Tally tracks your bills, debt, income, and savings goals across all your devices — without forcing you to learn yet another spreadsheet system. Buy once. Use forever.</p>
+    <div class="cta-row">
+      <a href="#pricing" class="btn btn-primary">Get Tally for $29 →</a>
+      <a href="#features" class="btn btn-secondary">See what's inside</a>
+      <span class="price-badge"><b>One-time payment.</b> No subscription.</span>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-label">What's inside</div>
+      <h2>Everything you need.<br>Nothing you don't.</h2>
+      <p>Tally has 13 views purpose-built for the way most people actually budget — not the way personal-finance apps want you to.</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature">
+        <div class="icon">📋</div>
+        <h3>Bills with recurrence</h3>
+        <p>Weekly, biweekly, monthly, quarterly, yearly. Auto-pay flags, late fees, split payments, behind-on-payments alerts.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">💰</div>
+        <h3>Income tracking</h3>
+        <p>Multiple sources, paycheck recurrence, occurrence-aware projections — see what's actually coming in this month.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">📊</div>
+        <h3>Dashboard at a glance</h3>
+        <p>Pie charts for spending, donut for debt breakdown, line for net worth, bar for income vs spending — actual visuals, not just tables.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">🏔</div>
+        <h3>Debt snowball strategy</h3>
+        <p>Smallest-balance-first or highest-APR-first — Tally shows you exactly what to pay extra on each month.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">🎯</div>
+        <h3>Savings goals + sinking funds</h3>
+        <p>Christmas, vacation, car repair — labeled buckets that stop bills from blindsiding you. Plus the classic 52-week challenge built in.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">📅</div>
+        <h3>Bill calendar</h3>
+        <p>See every bill on a monthly grid. Spot crunch weeks early. Plan around your paychecks instead of around your bills.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">⏪</div>
+        <h3>Catch-Up Planner</h3>
+        <p>Already behind on a bill or two? Tally helps you build a realistic plan to catch up without going negative.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">📤</div>
+        <h3>CSV import + export</h3>
+        <p>Download a CSV from your bank, drop it in, get categorized expenses. Or export your data anytime — it's yours.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">☁</div>
+        <h3>Cloud sync across devices</h3>
+        <p>Sign in on your phone, your laptop, your work computer — your data syncs automatically. Email + password, no tracking.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container">
+    <div class="section-head">
+      <div class="section-label">How Tally is different</div>
+      <h2>Buy once.<br>No bank credentials.<br>Your data.</h2>
+    </div>
+    <div class="compare">
+      <div class="compare-col">
+        <h4>Mint / Monarch / Rocket Money</h4>
+        <div class="price">$14.99/month</div>
+        <ul>
+          <li class="yes">Auto-import via bank login</li>
+          <li class="no">Requires bank credentials</li>
+          <li class="no">$180+ per year, forever</li>
+          <li class="no">Ads + upsells</li>
+          <li class="no">Data harvested + sold</li>
+        </ul>
+      </div>
+      <div class="compare-col highlight">
+        <h4>✦ Tally</h4>
+        <div class="price">$29 once</div>
+        <ul>
+          <li class="yes">Manual + CSV import (private)</li>
+          <li class="yes">Never asks for your bank login</li>
+          <li class="yes">Buy once, use forever</li>
+          <li class="yes">No ads, no upsells, no tracking</li>
+          <li class="yes">Your data stays yours</li>
+        </ul>
+      </div>
+      <div class="compare-col">
+        <h4>Excel / Google Sheets templates</h4>
+        <div class="price">$15 once</div>
+        <ul>
+          <li class="no">Spreadsheet skills required</li>
+          <li class="no">Formulas break easily</li>
+          <li class="no">No multi-device sync</li>
+          <li class="no">No real visualizations</li>
+          <li class="no">No bill recurrence engine</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="container">
+    <div class="section-head">
+      <div class="section-label">Pricing</div>
+      <h2>$29. Once. Forever.</h2>
+      <p>No subscription. No upgrades. No surprise charges next year. Pay once, use Tally for as long as the internet exists.</p>
+    </div>
+    <div class="pricing-card">
+      <h3>Tally Lifetime</h3>
+      <p class="sub">Everything in Tally, forever, across all your devices.</p>
+      <div class="price"><span>$</span>29</div>
+      <div class="once">One-time payment · No subscription</div>
+      <ul class="features">
+        <li>All 13 views and features</li>
+        <li>Cloud sync across unlimited devices</li>
+        <li>Pie charts, debt visualizations, trend graphs</li>
+        <li>Savings challenges + sinking funds</li>
+        <li>Free updates forever</li>
+        <li>Cancel anytime — but there's nothing to cancel</li>
+      </ul>
+      <a href="#" id="buyBtn" class="btn">Buy Tally — $29</a>
+      <div class="guarantee">30-day money-back guarantee. No questions asked.</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="container" style="max-width:760px">
+    <div class="section-head">
+      <div class="section-label">Common questions</div>
+      <h2>Stuff people ask.</h2>
+    </div>
+    <details class="faq">
+      <summary>Does Tally connect to my bank?</summary>
+      <div class="answer">No — and that's intentional. Tally never asks for your bank login. You enter bills and income manually (it's faster than you think once you set it up once), or use CSV import to bring in transactions from your bank's download. Many people prefer this because their bank credentials never touch a third party.</div>
+    </details>
+    <details class="faq">
+      <summary>Is this really a one-time payment? No subscription?</summary>
+      <div class="answer">Really. $29 once. You'll get free updates forever and your cloud sync is included. Your purchase pays for the hosting (which is very cheap on modern infrastructure). The math works because Tally is built by a small studio, not a venture-backed startup that needs to extract recurring revenue from you.</div>
+    </details>
+    <details class="faq">
+      <summary>What happens to my data if Tally shuts down?</summary>
+      <div class="answer">You can export everything as JSON at any time from Settings → Export. Your data is yours. If the cloud sync ever goes away, the local-storage version of Tally still works in any browser, offline, forever.</div>
+    </details>
+    <details class="faq">
+      <summary>Can I use Tally on my phone?</summary>
+      <div class="answer">Yes. Tally is a web app that works on phone, tablet, laptop, desktop — anything with a modern browser. Sign in once on each device, your data syncs automatically. No app store, no install required.</div>
+    </details>
+    <details class="faq">
+      <summary>What if I'm not happy with it?</summary>
+      <div class="answer">30-day money-back guarantee. Email <a href="mailto:hello@greenfield.build">hello@greenfield.build</a> with your purchase email and we'll refund you, no questions asked.</div>
+    </details>
+    <details class="faq">
+      <summary>Who builds Tally?</summary>
+      <div class="answer">Tally is built by Ashley Brown at <a href="https://greenfield.build">Greenfield</a>, a one-person studio building software for normal people. No VC, no growth team, no quarterly metrics. Just one person making something useful and selling it once.</div>
+    </details>
+  </div>
+</section>
+
+<section class="cta-final">
+  <h2>Stop renting your budget app.</h2>
+  <p>$29 once. Cloud sync forever. No bank connection. Your data, your control.</p>
+  <a href="#" id="buyBtn2" class="btn">Get Tally — $29</a>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="wordmark" style="justify-content:center;margin-bottom:12px">
+      <svg width="24" height="24" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <line x1="4" y1="9" x2="28" y2="9" stroke="#16A34A" stroke-width="2.6" stroke-linecap="round" opacity="0.35"/>
+        <line x1="4" y1="15" x2="28" y2="15" stroke="#16A34A" stroke-width="2.6" stroke-linecap="round" opacity="0.6"/>
+        <line x1="4" y1="21" x2="28" y2="21" stroke="#16A34A" stroke-width="2.6" stroke-linecap="round" opacity="0.85"/>
+        <line x1="4" y1="27" x2="28" y2="27" stroke="#16A34A" stroke-width="2.6" stroke-linecap="round"/>
+      </svg>
+      Tally
+    </div>
+    <div>&copy; <span id="year"></span> Tally · A <a href="https://greenfield.build" target="_blank">Greenfield</a> product · <a href="mailto:hello@greenfield.build">hello@greenfield.build</a></div>
+  </div>
+</footer>
+
+<script>
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // GUMROAD: replace with real Gumroad product URL once created
+  const GUMROAD_URL = "https://greenfield.gumroad.com/l/tally";
+  function goBuy(e){ e.preventDefault(); window.open(GUMROAD_URL, '_blank', 'noopener'); }
+  document.getElementById('buyBtn').addEventListener('click', goBuy);
+  document.getElementById('buyBtn2').addEventListener('click', goBuy);
+</script>
+</body>
+</html>
