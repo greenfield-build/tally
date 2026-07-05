@@ -1025,7 +1025,45 @@ modalBg.addEventListener('mouseup', e=>{
    ROUTER
    ========================================================================= */
 let currentView = 'dashboard';
+function syncAutopayPayments(){
+  const t = today();
+  const todayISO = toISO(t);
+  let mutated = false;
+  for(const b of state.bills){
+    if(!b.autopay || b.active === false || b.paidOff) continue;
+    if(!b.dueDate || !b.recurring || b.recurring === 'none') continue;
+    let guard = 0;
+    while(b.dueDate && b.dueDate <= todayISO && guard++ < 120){
+      const already = (state.payments||[]).some(p => p.billId === b.id && p.dueDate === b.dueDate);
+      const amt = Number(b.amount||0);
+      if(!already && amt > 0){
+        state.payments.push({
+          id: uid(),
+          billId: b.id,
+          billName: b.name,
+          amount: amt,
+          datePaid: b.dueDate,
+          dueDate: b.dueDate,
+          pending: true
+        });
+        if(isDebt(b)){
+          if(b.apr){
+            const interest = Number(b.balance||0) * Number(b.apr)/12;
+            b.balance = Math.max(0, Number(b.balance||0) + interest - amt);
+          } else {
+            b.balance = Math.max(0, Number(b.balance||0) - amt);
+          }
+        }
+        mutated = true;
+      }
+      b.dueDate = advance(b.dueDate, b.recurring);
+    }
+  }
+  if(mutated) save();
+}
+
 function render(v){
+  syncAutopayPayments();
   currentView = v || currentView;
   const view = document.getElementById('view');
   view.innerHTML = '';
@@ -1820,7 +1858,7 @@ function bulkMarkMonthPaid(){
 
 function splitBillPayment(id, replaceScheduledId){
   const b = state.bills.find(x=>x.id===id); if(!b) return;
-  let total, anchorDate, replacingCp = null;
+  let total, anchorDate, replacingCp = null, priorPaid = 0;
   if(replaceScheduledId){
     replacingCp = (b.catchupPayments||[]).find(p=>p.id===replaceScheduledId);
     if(!replacingCp){ alert('Scheduled payment not found.'); return; }
@@ -1829,11 +1867,14 @@ function splitBillPayment(id, replaceScheduledId){
     anchorDate = replacingCp.date;
   } else {
     if(!b.amount){ alert('This bill has no amount to split.'); return; }
-    total = Number(b.amount||0);
+    priorPaid = priorPaidThisMonth(b);
+    total = +Math.max(0, Number(b.amount||0) - priorPaid).toFixed(2);
     anchorDate = b.dueDate;
+    if(total === 0){ alert(`"${b.name}" is already fully paid this month (${fmt(priorPaid)} of ${fmt(b.amount)}).`); return; }
   }
   if(!total){ alert('Amount is zero — nothing to split.'); return; }
-  let splits = makeEvenSplits(total, 2, anchorDate);
+  let splits = makeSmartSplits(total, anchorDate);
+  if(!splits.length) splits = makeEvenSplits(total, 2, anchorDate);
 
   // When re-splitting a scheduled payment, hide that one from the "existing" list (it's the one being replaced)
   const existingPending = (b.catchupPayments||[]).filter(p=>!p.paid && p.id !== (replaceScheduledId||''));
@@ -1844,6 +1885,8 @@ function splitBillPayment(id, replaceScheduledId){
     const ok = Math.abs(diff) < 0.01;
     openModal(`
       <h3>${replacingCp?`Re-split ${escapeHTML(b.name)} (from ${replacingCp.date})`:`Split "${escapeHTML(b.name)}"`} — total ${fmt(total)}</h3>
+      ${priorPaid>0 ? `<div class="alert info" style="margin-bottom:10px">💡 <b>${fmt(priorPaid)}</b> already paid toward this bill this month — splitting the remaining <b>${fmt(total)}</b>.</div>` : ''}
+      <p class="help" style="margin-top:0">Suggested splits align with your upcoming pay dates before the due date. Adjust dates or amounts below.</p>
       ${existingPending.length ? `<div class="alert warn">
         <b>⚠ Heads up:</b> this bill already has <b>${existingPending.length}</b> scheduled extra payment${existingPending.length===1?'':'s'} totaling <b>${fmt(existingTotal)}</b>. New splits will be ADDED on top.
         <table style="margin:8px 0;background:transparent;border:0;box-shadow:none">
@@ -2006,6 +2049,58 @@ function makeEvenSplits(total, n, anchorDate){
   return out;
 }
 
+// Suggest splits aligned with upcoming paychecks between today and the bill due date.
+// If no paydays fall in that window, fall back to weekly splits.
+function makeSmartSplits(total, dueDateStr){
+  const t = today();
+  const target = toDate(dueDateStr) || t;
+  const paydays = new Set();
+  for(const inc of state.income){
+    if(!inc.recurring || inc.recurring === 'none' || !inc.startDate) continue;
+    let cur = inc.startDate; let safety = 0;
+    // walk backward to a date <= today
+    while(toDate(cur) > t && safety++ < 4000) cur = reverseAdvance(cur, inc.recurring);
+    // walk forward to first date >= today
+    while(toDate(cur) < t && safety++ < 4000) cur = advance(cur, inc.recurring);
+    while(toDate(cur) <= target && safety++ < 4000){
+      paydays.add(cur);
+      cur = advance(cur, inc.recurring);
+    }
+  }
+  const sorted = [...paydays].sort();
+  if(sorted.length >= 2){
+    const n = sorted.length;
+    const per = +(total/n).toFixed(2);
+    const last = +(total - per*(n-1)).toFixed(2);
+    return sorted.map((d,i)=>({date:d, amount: i===n-1 ? last : per}));
+  }
+  // Fallback: split by remaining weeks (2..6)
+  const days = Math.max(7, Math.ceil((target - t)/(24*3600*1000)));
+  const n = Math.max(2, Math.min(6, Math.ceil(days/7)));
+  const per = +(total/n).toFixed(2);
+  const last = +(total - per*(n-1)).toFixed(2);
+  const out = [];
+  for(let i=0;i<n;i++){
+    const d = new Date(t); d.setDate(d.getDate() + i*7);
+    out.push({date: toISO(d), amount: i===n-1 ? last : per});
+  }
+  return out;
+}
+
+// How much has already been paid toward this bill in the current billing month.
+function priorPaidThisMonth(bill){
+  const t = today();
+  const mStart = new Date(t.getFullYear(), t.getMonth(), 1);
+  const mEnd = new Date(t.getFullYear(), t.getMonth()+1, 0);
+  const paidLogged = (state.payments||[])
+    .filter(p => p.billId === bill.id && toDate(p.datePaid) >= mStart && toDate(p.datePaid) <= mEnd)
+    .reduce((s,p)=>s+Number(p.amount||0), 0);
+  const scheduledPaid = (bill.catchupPayments||[])
+    .filter(p => p.paid && toDate(p.date) >= mStart && toDate(p.date) <= mEnd)
+    .reduce((s,p)=>s+Number(p.amount||0), 0);
+  return paidLogged + scheduledPaid;
+}
+
 function logExtraPayment(id){
   const b = state.bills.find(x=>x.id===id); if(!b) return;
   const amt = prompt(`Extra payment toward "${b.name}" (current balance ${fmt(b.balance)}):`, '');
@@ -2148,12 +2243,18 @@ function sumIncomeInRange(start, end){
   let total = 0;
   for(const i of state.income){
     if(i.recurring && i.recurring!=='none' && i.startDate){
-      // project occurrences from startDate forward to today+ a few years
-      let cur = i.startDate;
-      let safety = 0;
-      while(toDate(cur) < start && safety++ < 2000) cur = advance(cur, i.recurring);
+      const earliest = i.startedOn ? toDate(i.startedOn) : null;
+      // Walk back from the pay anchor until we're at or before `start` (or earliest)
+      let cur = i.startDate; let safety = 0;
+      while(toDate(cur) > start && safety++ < 4000){
+        const prev = reverseAdvance(cur, i.recurring);
+        if(earliest && toDate(prev) < earliest) break;
+        cur = prev;
+      }
+      // Then walk forward from `start` to `end`, counting occurrences
+      while(toDate(cur) < start && safety++ < 4000) cur = advance(cur, i.recurring);
       while(toDate(cur) <= end && safety++ < 4000){
-        if(toDate(cur) >= start) total += Number(i.amount||0);
+        if(!earliest || toDate(cur) >= earliest) total += Number(i.amount||0);
         cur = advance(cur, i.recurring);
       }
     } else {
@@ -2165,10 +2266,16 @@ function sumIncomeInRange(start, end){
 }
 function incomeOccurrencesInMonth(income, monthStart, monthEnd){
   if(income.recurring && income.recurring!=='none' && income.startDate){
+    const earliest = income.startedOn ? toDate(income.startedOn) : null;
     const out = []; let cur = income.startDate; let safety = 0;
-    while(toDate(cur) < monthStart && safety++<2000) cur = advance(cur, income.recurring);
+    while(toDate(cur) > monthStart && safety++ < 4000){
+      const prev = reverseAdvance(cur, income.recurring);
+      if(earliest && toDate(prev) < earliest) break;
+      cur = prev;
+    }
+    while(toDate(cur) < monthStart && safety++<4000) cur = advance(cur, income.recurring);
     while(toDate(cur) <= monthEnd && safety++<4000){
-      if(toDate(cur) >= monthStart) out.push(cur);
+      if(toDate(cur) >= monthStart && (!earliest || toDate(cur) >= earliest)) out.push(cur);
       cur = advance(cur, income.recurring);
     }
     return out;
@@ -2234,14 +2341,46 @@ function renderIncome(root){
       <div class="card mini"><div class="lbl">Sources</div><div class="val">${state.income.length}</div></div>
     </div>
     <div class="section-title">All income entries</div>
-    ${state.income.length ? `<table><thead><tr><th>Source</th><th>Date / Start</th><th>Recurring</th><th class="num">Amount</th><th></th></tr></thead>
+    ${state.income.length ? `<table><thead><tr><th>Source</th><th>Type</th><th>Next pay</th><th>Recurring</th><th class="num">Amount</th><th></th></tr></thead>
       <tbody>${state.income.map(i=>`<tr>
         <td>${escapeHTML(i.source||i.name||'Income')}${i.notes?`<div style="color:var(--mute);font-size:12px">${escapeHTML(i.notes)}</div>`:''}</td>
+        <td>${(i.type||'salary')==='salary'?'Salary':(i.type||'salary')==='hourly'?'Hourly':(i.type||'salary')==='commission'?'Commission':'Other'}</td>
         <td>${i.startDate||i.date||''}</td>
         <td>${i.recurring && i.recurring!=='none' ? i.recurring : '<span style="color:var(--mute)">one-time</span>'}</td>
         <td class="num pos">${fmt(i.amount)}</td>
         <td style="text-align:right"><button class="btn sm ghost" data-edit="${i.id}">Edit</button> <button class="btn sm danger" data-del="${i.id}">Delete</button></td>
       </tr>`).join('')}</tbody></table>` : `<div class="empty">No income added yet. Click <b>+ Add Income</b> to start. Add your paycheck as recurring weekly/biweekly, plus any side income.</div>`}
+    ${state.income.length ? `
+    <div class="section-title" style="margin-top:24px">Projected pay dates — next 6 months</div>
+    ${(()=>{
+      const rows = [];
+      for(let mi=0; mi<6; mi++){
+        const ms = new Date(t.getFullYear(), t.getMonth()+mi, 1);
+        const me = new Date(t.getFullYear(), t.getMonth()+mi+1, 0);
+        const monthLabel = ms.toLocaleDateString(undefined,{month:'long',year:'numeric'});
+        const events = [];
+        for(const inc of state.income){
+          for(const d of incomeOccurrencesInMonth(inc, ms, me)){
+            events.push({date:d, source:inc.source||'Income', amount:Number(inc.amount||0), type:inc.type||'salary'});
+          }
+        }
+        events.sort((a,b)=>a.date.localeCompare(b.date));
+        const monthTotal = events.reduce((s,e)=>s+e.amount, 0);
+        rows.push(`<div class="card" style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <b>${monthLabel}</b>
+            <span class="pos" style="font-weight:700">${fmt(monthTotal)}</span>
+          </div>
+          ${events.length ? `<table style="margin:0"><tbody>${events.map(e=>`<tr>
+            <td style="width:110px">${e.date}</td>
+            <td>${escapeHTML(e.source)}${e.type!=='salary'?` <span class="pill mute">${e.type}</span>`:''}</td>
+            <td class="num pos">${fmt(e.amount)}</td>
+          </tr>`).join('')}</tbody></table>` : `<div style="color:var(--mute);font-size:13px">No projected pay dates.</div>`}
+        </div>`);
+      }
+      return rows.join('');
+    })()}
+    ` : ''}
   `;
   document.getElementById('addInc').onclick = ()=>editIncome();
   root.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=>editIncome(el.dataset.edit));
@@ -2253,18 +2392,24 @@ function renderIncome(root){
 }
 
 function editIncome(id){
-  const i = id ? state.income.find(x=>x.id===id) : { id:'', source:'', amount:'', startDate:toISO(today()), recurring:'biweekly', notes:'' };
+  const i = id ? state.income.find(x=>x.id===id) : { id:'', source:'', amount:'', startDate:toISO(today()), recurring:'biweekly', type:'salary', startedOn:'', notes:'' };
   openModal(`
     <h3>${id?'Edit':'Add'} Income</h3>
     <div class="field"><label>Source (e.g. "PI Paycheck")</label><input id="i_src" value="${escapeAttr(i.source||'')}"></div>
     <div class="field two">
-      <div><label>Amount</label><input id="i_amt" type="number" step="0.01" value="${i.amount??''}"></div>
-      <div><label>Date / first occurrence</label><input id="i_date" type="date" value="${i.startDate||i.date||''}"></div>
+      <div><label>Type</label><select id="i_type">
+        ${[['salary','Salary (fixed)'],['hourly','Hourly (varies)'],['commission','Commission (varies)'],['other','Other']].map(([v,l])=>`<option value="${v}" ${(i.type||'salary')===v?'selected':''}>${l}</option>`).join('')}
+      </select></div>
+      <div><label>Amount per pay period <span style="color:var(--mute);font-weight:400">(estimate for hourly/commission)</span></label><input id="i_amt" type="number" step="0.01" value="${i.amount??''}"></div>
     </div>
     <div class="field two">
+      <div><label>Next pay date</label><input id="i_date" type="date" value="${i.startDate||i.date||''}"></div>
       <div><label>Recurring</label><select id="i_rec">
         ${['none','weekly','biweekly','monthly','quarterly','yearly'].map(r=>`<option value="${r}" ${i.recurring===r?'selected':''}>${r}</option>`).join('')}
       </select></div>
+    </div>
+    <div class="field two">
+      <div><label>Started on <span style="color:var(--mute);font-weight:400">(optional — leave blank if ongoing)</span></label><input id="i_since" type="date" value="${i.startedOn||''}"></div>
       <div><label>Deposited to account</label>${accountSelect('i_acct', i.accountId)}</div>
     </div>
     <div class="field"><label>Notes</label><textarea id="i_notes" rows="2">${escapeHTML(i.notes||'')}</textarea></div>
@@ -2275,6 +2420,7 @@ function editIncome(id){
     </div>
   `);
   document.getElementById('cancel').onclick = closeModal;
+  setTimeout(()=>{ const n = document.getElementById('i_src'); if(n) n.focus(); }, 30);
   if(id) document.getElementById('del').onclick = ()=>{
     if(!confirm('Delete?')) return;
     state.income = state.income.filter(x=>x.id!==id);
@@ -2287,6 +2433,8 @@ function editIncome(id){
       amount: parseFloat(document.getElementById('i_amt').value)||0,
       startDate: document.getElementById('i_date').value || toISO(today()),
       recurring: document.getElementById('i_rec').value,
+      type: document.getElementById('i_type').value,
+      startedOn: document.getElementById('i_since').value || '',
       accountId: document.getElementById('i_acct').value,
       notes: document.getElementById('i_notes').value.trim()
     };
@@ -4136,15 +4284,25 @@ function withdrawSinkingFund(fid){
 function renderHistory(root){
   const list = [...state.payments].sort((a,b)=>b.datePaid.localeCompare(a.datePaid));
   const total = list.reduce((s,p)=>s+Number(p.amount||0),0);
+  const pendingCount = list.filter(p=>p.pending).length;
   root.innerHTML = `
     <header class="page"><h2>Payment History</h2>
       <div class="row"><div class="card" style="padding:8px 14px"><div class="lbl">Lifetime paid</div><div style="font-weight:700">${fmt(total)}</div></div></div>
     </header>
-    ${list.length ? `<table><thead><tr><th>Date paid</th><th>Bill</th><th>Due date</th><th class="num">Amount</th><th></th></tr></thead><tbody>
+    ${pendingCount ? `<div class="alert info" style="margin-bottom:10px">💳 <b>${pendingCount}</b> autopay payment${pendingCount===1?'':'s'} awaiting bank clearance. Click <b>Cleared</b> to confirm the money actually posted.</div>` : ''}
+    ${list.length ? `<table><thead><tr><th>Date paid</th><th>Bill</th><th>Due date</th><th class="num">Amount</th><th>Status</th><th></th></tr></thead><tbody>
       ${list.map(p=>`<tr><td>${p.datePaid}</td><td>${escapeHTML(p.billName)}</td><td>${p.dueDate||''}</td><td class="num">${fmt(p.amount)}</td>
-        <td style="text-align:right"><button class="btn sm ghost" data-undo="${p.id}">Undo</button></td></tr>`).join('')}
+        <td>${p.pending?'<span class="pill warn">Pending</span>':'<span class="pill good">Cleared</span>'}</td>
+        <td style="text-align:right">${p.pending?`<button class="btn sm" data-clear="${p.id}">✓ Cleared</button> `:''}<button class="btn sm ghost" data-undo="${p.id}">Undo</button></td></tr>`).join('')}
       </tbody></table>` : `<div class="empty">No payments recorded yet.</div>`}
   `;
+  root.querySelectorAll('[data-clear]').forEach(el=>el.onclick=()=>{
+    const p = state.payments.find(x=>x.id===el.dataset.clear);
+    if(!p) return;
+    p.pending = false;
+    p.clearedOn = toISO(today());
+    save(); render();
+  });
   root.querySelectorAll('[data-undo]').forEach(el=>el.onclick=()=>{
     if(!confirm('Remove this payment record? (Does not undo recurring date advance.)')) return;
     state.payments = state.payments.filter(p=>p.id!==el.dataset.undo);
