@@ -1684,17 +1684,19 @@ function editBill(id){
     </div>
     <div class="field two">
       <div><label>Category</label>${(()=>{
-        const defaults = ['Housing','Utility','Insurance','Loan','Credit Card','Subscription','Mortgage','Auto','Health','Food','Kids','Savings','Other'];
+        const defaults = ['Housing','Mortgage','Rent','Utility','Phone','Internet','Insurance','Auto','Transportation','Loan','Credit Card','Subscription','Health','Medical','Food','Groceries','Dining','Kids','Pet','Personal Care','Entertainment','Travel','Gifts','Charity','Taxes','Education','Home Maintenance','Savings','Other'];
         const all = [...new Set([...defaults, ...cats])];
         const cur = b.category || '';
         return `<select id="f_cat"><option value="">— select —</option>${all.map(c=>`<option value="${escapeAttr(c)}" ${c===cur?'selected':''}>${escapeHTML(c)}</option>`).join('')}</select>`;
       })()}</div>
       <div><label>Paid from account</label>${accountSelect('f_acct', b.accountId)}</div>
     </div>
-    <div class="field two">
+    <div class="field three">
       <div><label style="font-weight:400;color:var(--text);display:flex;align-items:center;gap:6px"><input id="f_auto" type="checkbox" ${b.autopay?'checked':''}> Autopay</label></div>
       <div><label style="font-weight:400;color:var(--text);display:flex;align-items:center;gap:6px"><input id="f_debt" type="checkbox" ${(b.isDebt||b.balance||b.apr||b.creditLimit)?'checked':''}> This is a debt</label></div>
+      <div><label style="font-weight:400;color:var(--text);display:flex;align-items:center;gap:6px"><input id="f_sub" type="checkbox" ${(b.isSubscription||b.category==='Subscription'||creatingSub)?'checked':''}> This is a subscription</label></div>
     </div>
+    <div class="field"><label style="font-weight:400;color:var(--text);display:flex;align-items:center;gap:6px"><input id="f_var" type="checkbox" ${(b.isVariable || (b.notes && /variable|estimate|est\./i.test(b.notes)))?'checked':''}> Variable amount (changes monthly — e.g. water, electric, gas)</label></div>
     <details id="debtInfo" ${(b.isDebt||b.balance||b.apr||b.creditLimit||creatingDebt)?'open':''}>
       <summary>Debt info (balance, APR — for snowball)</summary>
       <div class="field three" style="margin-top:10px">
@@ -1732,6 +1734,7 @@ function editBill(id){
   document.getElementById('cancel').onclick = closeModal;
   if(id) document.getElementById('del').onclick = ()=>{ if(confirm('Delete this bill?')){ deleteBill(id); closeModal(); } };
   document.getElementById('f_debt').onchange = (e)=>{ if(e.target.checked) document.getElementById('debtInfo').open = true; };
+  setTimeout(()=>{ const n = document.getElementById('f_name'); if(n) n.focus(); }, 30);
   document.getElementById('save').onclick = ()=>{
     const due = document.getElementById('f_due').value || null;
     const data = {
@@ -1756,8 +1759,9 @@ function editBill(id){
       accountId: document.getElementById('f_acct').value,
       notes: document.getElementById('f_notes').value.trim(),
       active: !document.getElementById('f_paidoff').checked,
-      isSubscription: id ? b.isSubscription : (creatingSub || document.getElementById('f_cat').value.trim() === 'Subscription'),
-      isDebt: document.getElementById('f_debt').checked
+      isSubscription: document.getElementById('f_sub').checked,
+      isDebt: document.getElementById('f_debt').checked,
+      isVariable: document.getElementById('f_var').checked
     };
     if(!data.originalBalance) data.originalBalance = data.balance;
     if(id){
@@ -2021,7 +2025,7 @@ function logExtraPayment(id){
 
 function markPaid(id, occurrenceDate){
   const b = state.bills.find(x=>x.id===id); if(!b) return;
-  const isVariable = b.notes && /variable|estimate|est\./i.test(b.notes);
+  const isVariable = b.isVariable === true || (b.notes && /variable|estimate|est\./i.test(b.notes));
   const isDebtBill = isDebt(b) || (b.apr||0)>0 || (b.creditLimit||0)>0;
   openModal(`
     <h3>Mark "${escapeHTML(b.name)}" paid ${isVariable?'<span class="pill info">variable</span>':''}${isDebtBill?'<span class="pill info">debt</span>':''}</h3>
