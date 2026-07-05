@@ -8,9 +8,13 @@ dist/
 
 # Admin scripts (use tokens via env)
 .deploy-tally.py
+.deploy-tally-v2.py
 .disable-email-confirm.py
 .run-schema.py
 .verify-supabase.py
+.attach-github.py
+.add-domain.py
+.set-redirect-urls.py
 
 # OS junk
 .DS_Store

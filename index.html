@@ -13,8 +13,8 @@
   /* ============================================================
      TALLY — Greenfield design system
      ============================================================ */
-  :root{
-    /* Greenfield palette */
+  :root, [data-theme="light"]{
+    /* Greenfield palette — light */
     --bg:#FAFAF6;
     --bg-soft:#F2F2EC;
     --panel:#FFFFFF;
@@ -42,7 +42,79 @@
     --bad:#DC2626;
     --bad-soft:rgba(220,38,38,0.10);
     --shadow:0 1px 2px rgba(10,10,10,.04), 0 6px 18px rgba(10,10,10,.04);
+    /* Theme-aware extras for charts */
+    --grid:rgba(10,10,10,0.06);
+    --chart-text:#525252;
   }
+
+  [data-theme="dark"]{
+    /* Greenfield palette — dark */
+    --bg:#0A0A0A;
+    --bg-soft:#0F0F0F;
+    --panel:#141414;
+    --card:#161616;
+    --surface:#161616;
+    --line:rgba(255,255,255,0.08);
+    --line-strong:rgba(255,255,255,0.14);
+    --text:#F5F5F5;
+    --ink:#F5F5F5;
+    --mute:rgba(245,245,245,0.55);
+    --ink-muted:rgba(245,245,245,0.55);
+    --soft:#1C1C1C;
+    /* Accent = brighter green for dark backgrounds */
+    --accent:#4ADE80;
+    --accent-2:#22C55E;
+    --accent-soft:rgba(74,222,128,0.10);
+    --green:#4ADE80;
+    --green-deep:#22C55E;
+    --green-soft:rgba(74,222,128,0.10);
+    /* Status */
+    --good:#4ADE80;
+    --good-soft:rgba(74,222,128,0.12);
+    --warn:#FBBF24;
+    --warn-soft:rgba(251,191,36,0.14);
+    --bad:#F87171;
+    --bad-soft:rgba(248,113,113,0.14);
+    --shadow:0 1px 2px rgba(0,0,0,.30), 0 6px 18px rgba(0,0,0,.50);
+    /* Theme-aware extras */
+    --grid:rgba(255,255,255,0.06);
+    --chart-text:#A0A0A0;
+  }
+
+  /* Dark mode — logo SVG color override */
+  [data-theme="dark"] aside h1::before,
+  [data-theme="dark"] .auth-brand::before{
+    background-image:url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none"><line x1="4" y1="9" x2="28" y2="9" stroke="%234ADE80" stroke-width="2.6" stroke-linecap="round" opacity="0.35"/><line x1="4" y1="15" x2="28" y2="15" stroke="%234ADE80" stroke-width="2.6" stroke-linecap="round" opacity="0.6"/><line x1="4" y1="21" x2="28" y2="21" stroke="%234ADE80" stroke-width="2.6" stroke-linecap="round" opacity="0.85"/><line x1="4" y1="27" x2="28" y2="27" stroke="%234ADE80" stroke-width="2.6" stroke-linecap="round"/></svg>');
+  }
+
+  /* Dark mode — bill items get adjusted backgrounds */
+  [data-theme="dark"] .cell{background:#1A1A1A}
+  [data-theme="dark"] .cell.has-overdue{background:rgba(248,113,113,0.08)}
+  [data-theme="dark"] .cell.all-paid{background:rgba(74,222,128,0.06)}
+  [data-theme="dark"] .cell.today{background:rgba(74,222,128,0.14)}
+  [data-theme="dark"] tr:hover td{background:rgba(74,222,128,0.06)}
+  [data-theme="dark"] th{background:#1A1A1A}
+  [data-theme="dark"] .modal-bg{background:rgba(0,0,0,0.75)}
+  [data-theme="dark"] .field input, [data-theme="dark"] .field select, [data-theme="dark"] .field textarea,
+  [data-theme="dark"] .toolbar input, [data-theme="dark"] .toolbar select,
+  [data-theme="dark"] .bulk, [data-theme="dark"] textarea{background:#0A0A0A;color:var(--text)}
+  [data-theme="dark"] #sync-indicator{background:#1A1A1A;color:var(--mute)}
+  [data-theme="dark"] .auth-msg.error{background:rgba(248,113,113,0.14);border-color:rgba(248,113,113,0.3);color:#FCA5A5}
+  [data-theme="dark"] .auth-config-warning{background:rgba(251,191,36,0.12);border-color:rgba(251,191,36,0.3);color:#FCD34D}
+  [data-theme="dark"] .pill.warn{color:#FCD34D}
+  [data-theme="dark"] .pill.bad{color:#FCA5A5}
+  [data-theme="dark"] .alert.warn{color:#FCD34D}
+  [data-theme="dark"] .alert.bad{color:#FCA5A5}
+
+  /* Dark mode — primary buttons invert (was white-on-white) */
+  [data-theme="dark"] .btn{background:#FAFAFA;color:#0A0A0A}
+  [data-theme="dark"] .btn:hover{background:var(--green);color:#0A0A0A;box-shadow:0 6px 18px rgba(74,222,128,0.25)}
+  [data-theme="dark"] .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line-strong)}
+  [data-theme="dark"] .btn.ghost:hover{background:transparent;color:var(--text);border-color:var(--text)}
+  [data-theme="dark"] .nav-cta{background:#FAFAFA;color:#0A0A0A}
+  [data-theme="dark"] .nav-cta:hover{background:var(--green);color:#0A0A0A}
+  [data-theme="dark"] form button{background:#FAFAFA;color:#0A0A0A}
+  [data-theme="dark"] form button:hover{background:var(--green);color:#0A0A0A}
   *{box-sizing:border-box}
   body{
     margin:0;color:var(--text);background:var(--bg);
@@ -526,6 +598,7 @@
       <button data-view="cancel">Subscriptions</button>
       <button data-view="accounts">Accounts</button>
       <button data-view="history">History</button>
+      <button data-view="help">Help</button>
       <button data-view="settings">Settings</button>
     </nav>
     <div class="user-badge" id="userBadge" style="display:none">
@@ -584,7 +657,7 @@ function statusFor(b){
   if(diff<=7)  return {cls:'warn',txt:'In '+diff+'d'};
   return {cls:'good',txt:'In '+diff+'d'};
 }
-function isDebt(b){ return Number(b.balance||0) > 0; }
+function isDebt(b){ return b.isDebt === true || Number(b.balance||0) > 0; }
 function escapeHTML(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escapeAttr(s){ return escapeHTML(s); }
 function occurrencesInMonth(bill, monthStart, monthEnd){
@@ -604,6 +677,41 @@ function occurrencesInMonth(bill, monthStart, monthEnd){
   }
   return out;
 }
+
+/* =========================================================================
+   THEME (light / dark / system)
+   ========================================================================= */
+function applyTheme(choice){
+  let effective = choice || 'system';
+  if(effective === 'system'){
+    effective = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  document.documentElement.setAttribute('data-theme', effective);
+  // Update Chart.js defaults to match theme
+  if(typeof Chart !== 'undefined'){
+    Chart.defaults.color = effective === 'dark' ? '#A0A0A0' : '#525252';
+    Chart.defaults.borderColor = effective === 'dark' ? 'rgba(255,255,255,0.06)' : 'rgba(10,10,10,0.06)';
+  }
+}
+// Apply theme as early as possible (before app boot — uses localStorage cached preference)
+(function earlyThemeApply(){
+  try{
+    const raw = localStorage.getItem('billmgr.v2');
+    let choice = 'system';
+    if(raw){
+      const parsed = JSON.parse(raw);
+      if(parsed && parsed.settings && parsed.settings.theme) choice = parsed.settings.theme;
+    }
+    applyTheme(choice);
+    // Respond to OS-level changes if user picked "system"
+    if(window.matchMedia){
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+        const cur = (state && state.settings && state.settings.theme) || 'system';
+        if(cur === 'system') applyTheme('system');
+      });
+    }
+  }catch(e){}
+})();
 
 /* =========================================================================
    CLOUD AUTH & SYNC (Supabase)
@@ -699,11 +807,11 @@ function load(){
     if(s && (s.bills||s.payments||s.income||s.budgets||s.goals||s.transactions||s.accounts)){
       if(!s.settings) s.settings = {};
       return {
-        accounts: s.accounts && s.accounts.length ? s.accounts : defaultAccounts(),
+        accounts: s.accounts || [],
         bills: s.bills || [],
         payments: s.payments || [],
         income: s.income || [],
-        budgets: s.budgets || defaultBudgets(),
+        budgets: s.budgets || [],
         goals: s.goals || [],
         transactions: s.transactions || [],
         transfers: s.transfers || [],
@@ -725,12 +833,14 @@ function load(){
 }
 
 function emptyInitialState(){
+  // Truly empty for new users — they add their own everything.
+  // Defaults are available via "Load demo data" if they want a head-start.
   return {
-    accounts: defaultAccounts(),
+    accounts: [],
     bills: [],
     payments: [],
     income: [],
-    budgets: defaultBudgets(),
+    budgets: [],
     goals: [],
     transactions: [],
     transfers: [],
@@ -925,7 +1035,7 @@ function render(v){
     challenges:renderChallenges, sinking:renderSinkingFunds,
     calendar:renderCalendar, annual:renderAnnual,
     forecast:renderForecast, snowball:renderSnowball, catchup:renderCatchup,
-    history:renderHistory, settings:renderSettings
+    history:renderHistory, help:renderHelp, settings:renderSettings
   }[currentView])(view);
 }
 
@@ -1556,11 +1666,14 @@ function wireBillActions(root){
 }
 
 function editBill(id){
-  const b = id ? state.bills.find(x=>x.id===id) : { id:'', name:'', amount:'', dueDate:toISO(today()), dueDay:1, category:'', recurring:'monthly', autopay:true, notes:'', balance:'', originalBalance:'', apr:'', creditLimit:'', isBehind:false, monthsBehind:0, flagCancel: pendingCancelFlag };
+  const b = id ? state.bills.find(x=>x.id===id) : { id:'', name:'', amount:'', dueDate:toISO(today()), dueDay:1, category: pendingSubscription?'Subscription':'', recurring:'monthly', autopay:true, notes:'', balance:'', originalBalance:'', apr:'', creditLimit:'', isBehind:false, monthsBehind:0, flagCancel: pendingCancelFlag, isSubscription: pendingSubscription, isDebt: pendingDebt };
   if(!id) pendingCancelFlag = false; // consume the flag
+  const creatingSub = !id && pendingSubscription;
+  const creatingDebt = !id && pendingDebt;
+  if(!id) { pendingSubscription = false; pendingDebt = false; } // consume the flags
   const cats = [...new Set(state.bills.map(x=>x.category).filter(Boolean))];
   openModal(`
-    <h3>${id?'Edit':'Add'} Bill</h3>
+    <h3>${id?'Edit':'Add'} ${creatingSub?'Subscription':creatingDebt?'Debt':'Bill'}</h3>
     <div class="field"><label>Name</label><input id="f_name" value="${escapeAttr(b.name)}"></div>
     <div class="field three">
       <div><label>Amount</label><input id="f_amount" type="number" step="0.01" value="${b.amount??''}"></div>
@@ -1570,13 +1683,19 @@ function editBill(id){
       </select></div>
     </div>
     <div class="field two">
-      <div><label>Category</label><input id="f_cat" list="catlist" value="${escapeAttr(b.category||'')}">
-        <datalist id="catlist">${cats.map(c=>`<option>${escapeHTML(c)}</option>`).join('')}</datalist>
-      </div>
+      <div><label>Category</label>${(()=>{
+        const defaults = ['Housing','Utility','Insurance','Loan','Credit Card','Subscription','Mortgage','Auto','Health','Food','Kids','Savings','Other'];
+        const all = [...new Set([...defaults, ...cats])];
+        const cur = b.category || '';
+        return `<select id="f_cat"><option value="">— select —</option>${all.map(c=>`<option value="${escapeAttr(c)}" ${c===cur?'selected':''}>${escapeHTML(c)}</option>`).join('')}</select>`;
+      })()}</div>
       <div><label>Paid from account</label>${accountSelect('f_acct', b.accountId)}</div>
     </div>
-    <div class="field"><label style="font-weight:400;color:var(--text);display:flex;align-items:center;gap:6px"><input id="f_auto" type="checkbox" ${b.autopay?'checked':''}> Autopay / debit</label></div>
-    <details ${(b.balance||b.apr||b.creditLimit)?'open':''}>
+    <div class="field two">
+      <div><label style="font-weight:400;color:var(--text);display:flex;align-items:center;gap:6px"><input id="f_auto" type="checkbox" ${b.autopay?'checked':''}> Autopay</label></div>
+      <div><label style="font-weight:400;color:var(--text);display:flex;align-items:center;gap:6px"><input id="f_debt" type="checkbox" ${(b.isDebt||b.balance||b.apr||b.creditLimit)?'checked':''}> This is a debt</label></div>
+    </div>
+    <details id="debtInfo" ${(b.isDebt||b.balance||b.apr||b.creditLimit||creatingDebt)?'open':''}>
       <summary>Debt info (balance, APR — for snowball)</summary>
       <div class="field three" style="margin-top:10px">
         <div><label>Current balance</label><input id="f_bal" type="number" step="0.01" value="${b.balance??''}"></div>
@@ -1612,6 +1731,7 @@ function editBill(id){
   `);
   document.getElementById('cancel').onclick = closeModal;
   if(id) document.getElementById('del').onclick = ()=>{ if(confirm('Delete this bill?')){ deleteBill(id); closeModal(); } };
+  document.getElementById('f_debt').onchange = (e)=>{ if(e.target.checked) document.getElementById('debtInfo').open = true; };
   document.getElementById('save').onclick = ()=>{
     const due = document.getElementById('f_due').value || null;
     const data = {
@@ -1635,7 +1755,9 @@ function editBill(id){
       offBudget: document.getElementById('f_offbudget').checked,
       accountId: document.getElementById('f_acct').value,
       notes: document.getElementById('f_notes').value.trim(),
-      active: !document.getElementById('f_paidoff').checked
+      active: !document.getElementById('f_paidoff').checked,
+      isSubscription: id ? b.isSubscription : (creatingSub || document.getElementById('f_cat').value.trim() === 'Subscription'),
+      isDebt: document.getElementById('f_debt').checked
     };
     if(!data.originalBalance) data.originalBalance = data.balance;
     if(id){
@@ -2714,8 +2836,10 @@ function renderSnowball(root){
   const totalPaidOff = paidOff.reduce((s,b)=>s+Number(b.originalBalance||0),0);
 
   root.innerHTML = `
-    <header class="page"><h2>Debt Snowball</h2></header>
-    <p class="help">Debts are <b>pulled automatically</b> from your Bills List (any bill with a balance). Update balances in <b>Bills List</b>.</p>
+    <header class="page"><h2>Debt Snowball</h2>
+      <div class="row no-print"><button class="btn" id="newDebt">+ Add debt</button></div>
+    </header>
+    <p class="help">Debts are <b>pulled automatically</b> from your Bills List (any bill with a balance). Add a new debt here or update balances in <b>Bills List</b>.</p>
     <div class="grid cards">
       <div class="card"><div class="lbl">Total balance</div><div class="val">${fmt(totalBal)}</div><div class="sub">${debts.length} account${debts.length===1?'':'s'}</div></div>
       <div class="card"><div class="lbl">Total min payment</div><div class="val">${fmt(totalMin)}</div></div>
@@ -2769,6 +2893,7 @@ function renderSnowball(root){
   document.getElementById('incMort').onchange = refresh;
   document.getElementById('plan').innerHTML = renderPlan(debts);
   document.getElementById('whatIf').innerHTML = renderWhatIf(debts);
+  document.getElementById('newDebt').onclick = ()=>{ pendingDebt = true; editBill(); };
   root.querySelectorAll('[data-reactivate]').forEach(el=>el.onclick=()=>{
     const b = state.bills.find(x=>x.id===el.dataset.reactivate);
     if(!b) return;
@@ -3425,6 +3550,7 @@ function renderCancelList(root){
   root.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=> editBill(el.dataset.edit));
 }
 let pendingSubscription = false;
+let pendingDebt = false;
 
 /* =========================================================================
    SAVINGS GOALS
@@ -4058,6 +4184,11 @@ function renderAccounts(root){
   });
 
   const total = totalBankBalance();
+  // Type-aware totals
+  const cashOnHand = state.accounts.filter(isAccountCash).reduce((s,a)=>s+Number(a.balance||0),0);
+  const debtBalance = state.accounts.filter(isAccountDebt).reduce((s,a)=>s+Number(a.balance||0),0);
+  const investmentBalance = state.accounts.filter(a=>(a.type||'')==='investment').reduce((s,a)=>s+Number(a.balance||0),0);
+  const netWorth = cashOnHand + investmentBalance - debtBalance;
 
   const unBills = state.bills.filter(b=>b.active!==false && !b.accountId).length;
   const unBudgets = state.budgets.filter(b=>!b.accountId).length;
@@ -4065,7 +4196,11 @@ function renderAccounts(root){
   const unassigned = unBills + unBudgets + unIncome;
 
   root.innerHTML = `
-    <header class="page"><h2>Bank Accounts</h2>
+    <header class="page">
+      <div>
+        <div class="eyebrow">Your money lives here</div>
+        <h2>Accounts</h2>
+      </div>
       <div class="row no-print">
         <button class="btn ghost" id="newTransfer">⇄ Transfer Funds</button>
         <button class="btn" id="addAcct">+ Add Account</button>
@@ -4076,17 +4211,37 @@ function renderAccounts(root){
       <b>${unassigned} item${unassigned===1?'':'s'} unassigned</b> (${unBills} bills, ${unBudgets} budget categories, ${unIncome} income).
       <button class="btn sm warn" id="autoTag" style="margin-left:8px">Auto-assign defaults</button>
     </div>` : ''}
-    <div class="grid cards">
-      <div class="card" style="border:2px solid var(--accent)"><div class="lbl">Total across all accounts</div><div class="val pos">${fmt(total)}</div></div>
+    <!-- Type-aware summary cards -->
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:24px">
+      <div class="panel" style="padding:20px;border-color:rgba(22,163,74,0.3)">
+        <div class="panel-label">Cash on hand</div>
+        <div class="pos" style="font-size:1.7rem;font-weight:800;letter-spacing:-0.025em;margin-top:6px;line-height:1">${fmt(cashOnHand)}</div>
+        <div style="color:var(--mute);font-size:0.82rem;margin-top:6px">Checking + savings + cash</div>
+      </div>
+      ${investmentBalance ? `<div class="panel" style="padding:20px">
+        <div class="panel-label">Investments</div>
+        <div style="font-size:1.7rem;font-weight:800;letter-spacing:-0.025em;margin-top:6px;line-height:1">${fmt(investmentBalance)}</div>
+      </div>` : ''}
+      ${debtBalance ? `<div class="panel" style="padding:20px;border-color:rgba(220,38,38,0.25)">
+        <div class="panel-label" style="color:var(--bad)">Debt balance</div>
+        <div class="neg" style="font-size:1.7rem;font-weight:800;letter-spacing:-0.025em;margin-top:6px;line-height:1">${fmt(debtBalance)}</div>
+        <div style="color:var(--mute);font-size:0.82rem;margin-top:6px">Credit cards + loans</div>
+      </div>` : ''}
+      <div class="panel" style="padding:20px;border-color:${netWorth>=0?'rgba(22,163,74,0.3)':'rgba(220,38,38,0.3)'}">
+        <div class="panel-label">Net worth</div>
+        <div class="${netWorth>=0?'pos':'neg'}" style="font-size:1.7rem;font-weight:800;letter-spacing:-0.025em;margin-top:6px;line-height:1">${fmt(netWorth)}</div>
+        <div style="color:var(--mute);font-size:0.82rem;margin-top:6px">Cash + investments − debt</div>
+      </div>
     </div>
     <div class="section-title">Your accounts</div>
     ${state.accounts.length ? state.accounts.map((a,i)=>{
       const d = data[i];
       const need = (d.monthBills + d.budget) - (Number(a.balance||0) + d.monthIncome);
+      const typeInfo = ACCOUNT_TYPES[a.type || 'checking'] || ACCOUNT_TYPES.checking;
       return `<div class="card" style="margin-bottom:14px;border-left:6px solid ${a.color||'var(--accent)'}">
         <div class="row" style="justify-content:space-between;align-items:flex-start">
           <div>
-            <h3 style="margin:0;font-size:18px">${escapeHTML(a.name)} ${a.bank?`<span class="pill mute">${escapeHTML(a.bank)}</span>`:''}</h3>
+            <h3 style="margin:0;font-size:18px">${escapeHTML(a.name)} <span class="pill info" style="font-size:0.68rem">${typeInfo.label}</span> ${a.bank?`<span class="pill mute">${escapeHTML(a.bank)}</span>`:''}</h3>
             <div style="color:var(--mute);font-size:13px;margin-top:2px">${escapeHTML(a.purpose||'')}</div>
           </div>
           <div class="row no-print">
@@ -4216,25 +4371,52 @@ function doTransfer(){
   };
 }
 
+const ACCOUNT_TYPES = {
+  checking:   { label:'🏦 Checking',     color:'#16A34A', purposeHint:'Day-to-day spending', isCash:true,  isDebt:false },
+  savings:    { label:'💰 Savings',      color:'#2E7AFF', purposeHint:'Emergency fund + savings', isCash:true,  isDebt:false },
+  cash:       { label:'💵 Cash',         color:'#F59E0B', purposeHint:'Pocket money',         isCash:true,  isDebt:false },
+  credit:     { label:'💳 Credit Card',  color:'#EC4899', purposeHint:'Revolving credit',     isCash:false, isDebt:true  },
+  loan:       { label:'📑 Loan',         color:'#8B5CF6', purposeHint:'Auto / personal / student loan', isCash:false, isDebt:true },
+  investment: { label:'📈 Investment',   color:'#06B6D4', purposeHint:'Brokerage, 401k, IRA', isCash:false, isDebt:false },
+  other:      { label:'📁 Other',        color:'#6366F1', purposeHint:'',                     isCash:false, isDebt:false },
+};
+
 function editAccount(id){
-  const a = id ? acctById(id) : {id:'', name:'', bank:'', balance:0, purpose:'', color:'#0284c7'};
+  const a = id ? acctById(id) : {id:'', name:'', type:'checking', bank:'', balance:0, purpose:'', color:'#16A34A'};
+  const currentType = a.type || 'checking';
   openModal(`
     <h3>${id?'Edit':'Add'} Account</h3>
+    <div class="field">
+      <label>Type</label>
+      <select id="a_type">
+        ${Object.entries(ACCOUNT_TYPES).map(([k,t]) => `<option value="${k}" ${k===currentType?'selected':''}>${t.label}</option>`).join('')}
+      </select>
+    </div>
     <div class="field two">
-      <div><label>Account name</label><input id="a_name" value="${escapeAttr(a.name)}"></div>
-      <div><label>Bank</label><input id="a_bank" value="${escapeAttr(a.bank||'')}" placeholder="Ally, Chase, etc."></div>
+      <div><label>Account name</label><input id="a_name" value="${escapeAttr(a.name)}" placeholder="e.g. Primary Checking"></div>
+      <div><label>Bank (optional)</label><input id="a_bank" value="${escapeAttr(a.bank||'')}" placeholder="Chase, Ally, etc."></div>
     </div>
     <div class="field two">
       <div><label>Current balance</label><input id="a_bal" type="number" step="0.01" value="${a.balance??0}"></div>
-      <div><label>Color (header strip)</label><input id="a_color" type="color" value="${a.color||'#0284c7'}"></div>
+      <div><label>Color</label><input id="a_color" type="color" value="${a.color||'#16A34A'}"></div>
     </div>
-    <div class="field"><label>Purpose / what it covers</label><input id="a_purpose" value="${escapeAttr(a.purpose||'')}" placeholder="e.g. Groceries, pet, household"></div>
+    <div class="field"><label>Notes (optional)</label><input id="a_purpose" value="${escapeAttr(a.purpose||'')}" placeholder="What this account is for"></div>
     <div class="actions"><button class="btn ghost" id="cancel">Cancel</button><button class="btn" id="save">${id?'Save':'Add'}</button></div>
   `);
+
+  // Update color + purpose hint when type changes
+  document.getElementById('a_type').onchange = (e) => {
+    const t = ACCOUNT_TYPES[e.target.value];
+    document.getElementById('a_color').value = t.color;
+    const purposeEl = document.getElementById('a_purpose');
+    if(!purposeEl.value && t.purposeHint) purposeEl.placeholder = t.purposeHint;
+  };
+
   document.getElementById('cancel').onclick = closeModal;
   document.getElementById('save').onclick = ()=>{
     const data = {
       id: id || ('acct_'+uid()),
+      type: document.getElementById('a_type').value,
       name: document.getElementById('a_name').value.trim() || 'Account',
       bank: document.getElementById('a_bank').value.trim(),
       balance: parseFloat(document.getElementById('a_bal').value)||0,
@@ -4246,6 +4428,10 @@ function editAccount(id){
     save(); closeModal(); render();
   };
 }
+
+// Helper: classify an account
+function isAccountCash(a){ return ACCOUNT_TYPES[a.type || 'checking']?.isCash !== false; }
+function isAccountDebt(a){ return ACCOUNT_TYPES[a.type || 'checking']?.isDebt === true; }
 
 /* =========================================================================
    BACKUP
@@ -4264,6 +4450,240 @@ function downloadBackup(){
 /* =========================================================================
    SETTINGS
    ========================================================================= */
+/* =========================================================================
+   HELP
+   ========================================================================= */
+function renderHelp(root){
+  root.innerHTML = `
+    <header class="page">
+      <div>
+        <div class="eyebrow">How to use Tally</div>
+        <h2>Help &amp; Guide</h2>
+      </div>
+    </header>
+
+    <p class="help" style="font-size:1rem;margin-bottom:24px;max-width:760px">Click any section to expand. Most of Tally is intuitive — but the more advanced features (rollover budgets, debt strategies, sinking funds) have some tips worth knowing.</p>
+
+    <!-- Quick start -->
+    <details class="faq" open>
+      <summary>🚀 Getting started in 5 minutes</summary>
+      <div class="answer">
+        <p><b>The 5-minute setup:</b></p>
+        <ol style="padding-left:20px;line-height:1.8">
+          <li>Go to <b>Accounts</b> → add your real bank accounts (checking, savings, etc.) with current balances</li>
+          <li>Go to <b>Bills</b> → click <b>+ Add Bill</b> for each recurring bill (rent, utilities, subscriptions, credit cards). Set the amount, due day, and recurrence (monthly/biweekly/etc.)</li>
+          <li>Go to <b>Income</b> → add your paycheck(s) and any other income sources</li>
+          <li>Go to <b>Spending</b> → add budget categories (Groceries: $500, Gas: $200, etc.)</li>
+          <li>Go back to <b>Dashboard</b> — you should now see your real numbers, charts, and upcoming bills</li>
+        </ol>
+        <p><b>Don't want to enter everything by hand right now?</b> Go to <b>Settings</b> → <b>Load demo data</b> to explore Tally with realistic sample data first. You can wipe it later.</p>
+      </div>
+    </details>
+
+    <!-- Bills -->
+    <details class="faq">
+      <summary>💳 Bills — how recurrence and auto-pay work</summary>
+      <div class="answer">
+        <p><b>Recurrence types:</b> Weekly, Biweekly, Monthly, Quarterly, Yearly, or None (one-time).</p>
+        <p><b>Auto-pay flag:</b> Check this if the bill pulls automatically — Tally will show an "auto" tag on the calendar so you know not to worry about it.</p>
+        <p><b>Marking paid:</b> Click <b>Pay</b> on any bill in the calendar, dashboard, or bills list when you've paid it. This logs the payment with today's date and advances the next due date.</p>
+        <p><b>Split a payment:</b> If you can't pay the full amount this period, click <b>Split</b> on the bill — Tally lets you record a partial payment and reschedule the remainder.</p>
+        <p><b>Late fees:</b> Open any bill → Edit → <b>Log late fee</b>. The fee is added to the debt balance if it's a debt, and tracked separately for accounting.</p>
+        <p><b>Debt vs regular bill:</b> If you set a <b>Balance</b> on a bill (like a credit card or loan), Tally treats it as a debt and includes it in Debt Payoff calculations.</p>
+      </div>
+    </details>
+
+    <!-- Income -->
+    <details class="faq">
+      <summary>💰 Income — paychecks, freelance, etc.</summary>
+      <div class="answer">
+        <p>Add each income source separately. Pick a frequency (weekly, biweekly, monthly, one-time). Tally calculates expected monthly income, projects forward, and shows it on the Dashboard and Forecast.</p>
+        <p><b>Net vs gross:</b> Always use <b>net</b> amounts (what hits your account after taxes/deductions). Tally isn't a tax tool — it's a cash-flow tool.</p>
+      </div>
+    </details>
+
+    <!-- Spending / Budget -->
+    <details class="faq">
+      <summary>📊 Spending — variable budget categories</summary>
+      <div class="answer">
+        <p><b>What goes here:</b> Variable expenses that aren't scheduled bills — groceries, gas, dining out, entertainment, pet supplies. Stuff where the amount varies month-to-month.</p>
+        <p><b>How to use it:</b></p>
+        <ol style="padding-left:20px;line-height:1.8">
+          <li>Add a category like "Groceries" with a monthly target ($500)</li>
+          <li>Every time you grocery shop, click <b>+ Log Expense</b>, pick Groceries, enter the amount</li>
+          <li>Tally tracks total spent vs target and shows a progress bar</li>
+          <li>If you go over, the bar turns red</li>
+        </ol>
+        <p><b>Rollover (powerful feature):</b> When editing a category, check <b>"Rollover unspent budget to next month"</b>. Any money you don't spend rolls forward to next month's available budget. Great for categories where spending fluctuates (Clothing, Gifts, Pet supplies, Home Maintenance).</p>
+      </div>
+    </details>
+
+    <!-- Calendar -->
+    <details class="faq">
+      <summary>📅 Calendar — the visual monthly plan</summary>
+      <div class="answer">
+        <p><b>What you see:</b> Every bill due date and income arrival mapped onto a monthly grid.</p>
+        <p><b>Color coding:</b></p>
+        <ul style="padding-left:20px;line-height:1.8">
+          <li><b>Green chip</b> = bill due (not paid yet)</li>
+          <li><b>Red chip + pulse</b> = overdue (cell tinted red)</li>
+          <li><b>Faded strikethrough</b> = paid</li>
+          <li><b>Blue chip</b> = personal event</li>
+          <li><b>TODAY label</b> = today's date highlighted</li>
+        </ul>
+        <p><b>Add a personal event:</b> Click <b>+ Add Event</b> for non-bill items — appointments, reminders, paydays, anything you want visible on the calendar.</p>
+        <p><b>Quick-pay:</b> Click any bill chip in the calendar to mark it paid right there. No need to dig through the bills list.</p>
+      </div>
+    </details>
+
+    <!-- Annual -->
+    <details class="faq">
+      <summary>📈 Annual Dashboard — the year view</summary>
+      <div class="answer">
+        <p>Year-at-a-glance summary. Shows: annual income, annual bills, total variable spending, annual net (surplus or deficit), plus a month-by-month breakdown table and top 10 spending categories.</p>
+        <p>Use the year switcher to compare years. <b>Print/PDF</b> for a year-end financial review.</p>
+      </div>
+    </details>
+
+    <!-- Forecast -->
+    <details class="faq">
+      <summary>🔮 Forecast — cash flow projection</summary>
+      <div class="answer">
+        <p>Projects your bank balance forward over the next ~3 months based on your scheduled bills, expected income, and current account balances. Helps you spot upcoming crunch weeks before they happen.</p>
+        <p>Bills with the <b>Off-budget</b> flag (paid directly, not from tracked accounts) are excluded from the projection.</p>
+      </div>
+    </details>
+
+    <!-- Goals -->
+    <details class="faq">
+      <summary>🎯 Goals — short-term savings targets</summary>
+      <div class="answer">
+        <p>Set savings goals with a target amount and deadline (Emergency Fund: $5,000, Vacation: $2,500, New Laptop: $1,500). Update the current amount as you save. Tally shows progress bars and tracks how close you are.</p>
+        <p><b>Difference from Sinking Funds:</b> Goals are typically one-time targets ("save $5,000 for an emergency"). Sinking Funds are ongoing/recurring with a regular contribution.</p>
+      </div>
+    </details>
+
+    <!-- Sinking Funds -->
+    <details class="faq">
+      <summary>🪣 Sinking Funds — money for predictable future expenses</summary>
+      <div class="answer">
+        <p>Money you set aside each month for known future expenses — Christmas gifts, car maintenance, annual insurance premium, kids' activities, vacation. The idea: save a little every month so the bill never blindsides you.</p>
+        <p><b>Example setup:</b></p>
+        <ul style="padding-left:20px;line-height:1.8">
+          <li>Christmas 2026 — $600 target, $50/month contribution, need by Dec 1</li>
+          <li>Car Maintenance — $800 target, $65/month contribution, no hard deadline</li>
+          <li>Annual Auto Insurance — $720 target, $60/month contribution, need by renewal</li>
+        </ul>
+        <p>Click <b>+ Add money</b> when you contribute, <b>Withdraw</b> when you actually use the funds.</p>
+      </div>
+    </details>
+
+    <!-- Challenges -->
+    <details class="faq">
+      <summary>🏆 Savings Challenges — gamified saving</summary>
+      <div class="answer">
+        <p>Pre-built challenges to make saving fun:</p>
+        <ul style="padding-left:20px;line-height:1.8">
+          <li><b>52-Week Challenge</b> — $1 week 1, $2 week 2, up to $52 week 52. Total: $1,378</li>
+          <li><b>Reverse 52-Week</b> — Start at $52, decrease. Easier to start, easier to finish</li>
+          <li><b>$1,000 in 100 Days</b> — ~$10/day. Quick, intense, satisfying</li>
+          <li><b>$1 a Day for a Year</b> — Easiest win — $365 saved</li>
+          <li><b>Penny Challenge</b> — Start with $0.01, double each day style</li>
+          <li><b>Custom</b> — Set your own target and contribution rules</li>
+        </ul>
+        <p>Pick a preset, log deposits as you go, watch the progress bar fill up.</p>
+      </div>
+    </details>
+
+    <!-- Debt Payoff -->
+    <details class="faq">
+      <summary>⚡ Debt Payoff — snowball vs avalanche</summary>
+      <div class="answer">
+        <p>Tally supports both popular debt elimination strategies:</p>
+        <ul style="padding-left:20px;line-height:1.8">
+          <li><b>Snowball</b> — Pay minimums on everything, then dump extra money on the <b>smallest balance</b> first. Once that's gone, snowball the freed-up payment onto the next smallest. Best for motivation — you see wins fast.</li>
+          <li><b>Avalanche</b> — Same minimums approach, but throw extra at the <b>highest APR first</b>. Saves you the most in interest. Best for cold math.</li>
+        </ul>
+        <p>Switch strategies anytime via the dropdown at the top. Tally tells you exactly which bill to overpay this month and how much.</p>
+        <p><b>Extra payment amount:</b> Set this in the Debt Payoff view. The higher, the faster you're debt-free.</p>
+        <p><b>Mortgage:</b> By default, mortgage is excluded from debt snowball (you don't typically aggressively pay it off the same way). Toggle this in Settings if you want it included.</p>
+      </div>
+    </details>
+
+    <!-- Catch Up -->
+    <details class="faq">
+      <summary>⏪ Catch Up — getting current on overdue bills</summary>
+      <div class="answer">
+        <p>If you've fallen behind on a bill or two, the Catch-Up Planner helps you build a realistic plan to get current without going negative on your accounts.</p>
+        <p>Mark a bill as "behind" when editing it (and how many months behind). The planner then shows the total catch-up amount needed and suggests a pay-down schedule.</p>
+      </div>
+    </details>
+
+    <!-- Subscriptions -->
+    <details class="faq">
+      <summary>📺 Subscriptions — the recurring cost killer</summary>
+      <div class="answer">
+        <p>This is where you find subscriptions you forgot you're paying for. Shows every recurring subscription with monthly + annual cost. Filter tabs: <b>All</b>, <b>Active</b>, <b>Flagged</b> (planning to cancel), <b>Canceled</b> (already gone).</p>
+        <p><b>Stats card "If you cancel flagged"</b> tells you exactly how much you'd save annually by canceling everything you've flagged. Big motivator.</p>
+        <p>Convert any existing bill into a subscription via the "Convert an existing bill" dropdown.</p>
+      </div>
+    </details>
+
+    <!-- Settings -->
+    <details class="faq">
+      <summary>⚙ Settings — your name, budget mode, data</summary>
+      <div class="answer">
+        <p><b>Your name</b> — Used for the dashboard greeting ("Good morning, Ashley.").</p>
+        <p><b>Budget mode</b> — Monthly (default) or Bi-weekly (paycheck-based zero-based budgeting). Use Bi-weekly if you live paycheck-to-paycheck and want to assign each paycheck to specific bills + spending.</p>
+        <p><b>Export / Import JSON backup</b> — Download a snapshot of all your data. Useful before testing, switching devices, or just paranoia.</p>
+        <p><b>CSV import</b> — Upload a transaction CSV from your bank. Tally auto-detects Date/Description/Amount columns, lets you pick a category for the import, optionally skip positive (income) rows.</p>
+        <p><b>Load demo data</b> — Replaces current data with realistic sample data. Useful for exploring features without entering 30 bills first.</p>
+        <p><b>Erase ALL data</b> — Nuclear option. Wipes everything (local + cloud). No undo.</p>
+      </div>
+    </details>
+
+    <!-- Cloud Sync -->
+    <details class="faq">
+      <summary>☁ Cloud Sync — using Tally on multiple devices</summary>
+      <div class="answer">
+        <p>When you sign in, all your data is stored in the cloud under your account. Sign in with the same email + password on any other device (phone, laptop, work computer) and your data appears.</p>
+        <p>The little indicator in the bottom-right shows sync status: <b>green dot + "All changes saved"</b> means you're synced. If it shows an error, your local copy is safe — just retry when you have internet.</p>
+        <p><b>Tip:</b> Tally is a web app — you can "Add to Home Screen" on iPhone or Android to make it act like a phone app (icon, full-screen, no browser bar).</p>
+      </div>
+    </details>
+
+    <!-- Privacy / Security -->
+    <details class="faq">
+      <summary>🔒 Privacy — what we store, what we don't</summary>
+      <div class="answer">
+        <p><b>What we store:</b> Your email, your password (hashed, never visible), and your budget data (bills, income, accounts, balances).</p>
+        <p><b>What we don't:</b> Your bank login credentials. Tally <b>never asks for your bank password</b> and never connects to your bank. All data is entered manually or imported from CSV files you choose to upload.</p>
+        <p><b>Your data is yours:</b> Export anytime from Settings. If Tally ever shuts down or you lose access, your JSON export works offline forever.</p>
+      </div>
+    </details>
+
+    <!-- Common issues -->
+    <details class="faq">
+      <summary>🛠 Common issues / fixes</summary>
+      <div class="answer">
+        <p><b>"My bills jumped to next month" / dates are wrong:</b> Settings → <b>Reset due dates to this month</b>.</p>
+        <p><b>"I accidentally marked a bunch of bills paid":</b> Settings → <b>Clear payments by month</b> → pick the month.</p>
+        <p><b>"I want to start completely over":</b> Settings → <b>Erase ALL data</b>.</p>
+        <p><b>"Sync indicator says error":</b> Your local data is safe. Refresh the page; if it still errors, check your internet.</p>
+        <p><b>"Forgot my password":</b> On the sign-in screen, click <b>Forgot password?</b> — we'll email you a reset link.</p>
+      </div>
+    </details>
+
+    <!-- Contact -->
+    <details class="faq">
+      <summary>✉ Still stuck? Contact us.</summary>
+      <div class="answer">
+        <p>If you can't find what you need here, email <a href="mailto:hello@greenfield.build" style="color:var(--green-deep);font-weight:700">hello@greenfield.build</a>. We read everything and reply within a business day.</p>
+      </div>
+    </details>
+  `;
+}
+
 function renderSettings(root){
   state.settings = state.settings || {};
   const budgetMode = state.settings.budgetMode || 'monthly';
@@ -4282,6 +4702,24 @@ function renderSettings(root){
       <h3 style="margin-top:0">Profile</h3>
       <div class="field"><label>Your name</label><input id="userName" value="${escapeAttr(userName)}" placeholder="What should we call you?" /></div>
       <div class="help">Used to personalize your dashboard greeting.</div>
+    </div>
+
+    <div class="card" style="margin-top:14px">
+      <h3 style="margin-top:0">🎨 Appearance</h3>
+      <div class="help" style="margin-bottom:14px">Pick your theme. "System" follows your device's light/dark setting.</div>
+      <div class="row" style="gap:8px">
+        ${[
+          ['light','☀ Light'],
+          ['dark','🌙 Dark'],
+          ['system','💻 System'],
+        ].map(([k,label]) => {
+          const active = (state.settings.theme||'system')===k;
+          const style = active
+            ? `background:var(--green);color:#fff;border:2px solid var(--green);font-weight:800;`
+            : `background:transparent;color:var(--text);border:2px solid var(--line-strong);`;
+          return `<button class="theme-pick" data-theme="${k}" style="${style}padding:10px 18px;border-radius:9px;font-family:inherit;cursor:pointer;font-size:0.92rem">${label}</button>`;
+        }).join('')}
+      </div>
     </div>
 
     <div class="card" style="margin-top:14px">
@@ -4423,18 +4861,33 @@ function renderSettings(root){
     save(); render();
     alert(`Removed ${matching.length} payment record${matching.length===1?'':'s'} from ${monthLabel}.`);
   };
-  document.getElementById('wipe').onclick = ()=>{
-    if(!confirm('Erase ALL bills, payments, income, transfers, goals, etc? This cannot be undone.')) return;
+  document.getElementById('wipe').onclick = async ()=>{
+    if(!confirm('Erase ALL data including accounts, bills, payments, income, transfers, goals, etc? This cannot be undone.')) return;
     if(!confirm('Really erase everything?')) return;
-    state.bills = []; state.payments = []; state.income = []; state.transfers = [];
-    state.goals = []; state.transactions = []; state.budgets = [];
-    state.challenges = []; state.sinkingFunds = []; state.netWorthHistory = [];
-    save(); render();
+    // Wipe everything by replacing state with empty
+    const empty = emptyInitialState();
+    Object.keys(state).forEach(k => delete state[k]);
+    Object.assign(state, empty);
+    // Persist immediately and AWAIT cloud sync before re-rendering
+    localStorage.setItem(KEY, JSON.stringify(state));
+    lastSyncedJSON = null; // force cloud push even though state was just reset
+    await cloudPushState(state);
+    render();
+    alert('All data erased. You\'re starting fresh.');
   };
 
   // Profile + Budget Mode + Demo Mode
   const userNameEl = document.getElementById('userName');
   if(userNameEl) userNameEl.onchange = ()=>{ state.settings.userName = userNameEl.value; save(); };
+
+  // Theme picker
+  root.querySelectorAll('.theme-pick').forEach(btn => btn.onclick = () => {
+    const choice = btn.dataset.theme;
+    state.settings.theme = choice;
+    save();
+    applyTheme(choice);
+    render();
+  });
   const budgetModeEl = document.getElementById('budgetMode');
   if(budgetModeEl) budgetModeEl.onchange = ()=>{ state.settings.budgetMode = budgetModeEl.value; save(); render(); };
   const demoModeEl = document.getElementById('demoMode');
@@ -4583,6 +5036,8 @@ async function bootApp(){
     }
     if(note) note.style.display = 'none';
   }
+  // Apply theme from synced state (in case cloud has a different preference than local)
+  applyTheme(state.settings && state.settings.theme);
   document.getElementById('auth-screen').classList.add('hidden');
   document.getElementById('appRoot').style.display = '';
   render('dashboard');
