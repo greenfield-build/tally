@@ -3033,6 +3033,22 @@ function renderSnowball(root){
       <div class="card"><div class="lbl">Paid this month</div><div class="val pos">${fmt(mPaid)}</div></div>
       <div class="card"><div class="lbl">Paid this year</div><div class="val pos">${fmt(yPaid)}</div></div>
     </div>
+    <div class="section-title">Your debts (${debts.length})</div>
+    ${debts.length ? `<table><thead><tr><th>Debt</th><th>Category</th><th class="num">Balance</th><th class="num">Min pmt</th><th class="num">APR</th><th></th></tr></thead>
+      <tbody>${debts.map(d=>{
+        const missingBal = !(Number(d.balance||0) > 0);
+        return `<tr${missingBal?' style="background:var(--warn-soft,#FEF3C7)"':''}>
+          <td><b>${escapeHTML(d.name)}</b>${missingBal?' <span class="pill warn" style="font-size:0.7rem">Set balance</span>':''}</td>
+          <td>${escapeHTML(d.category||'')}</td>
+          <td class="num">${missingBal?'<span style="color:var(--warn)">—</span>':fmt(d.balance)}</td>
+          <td class="num">${fmt(d.amount||0)}</td>
+          <td class="num">${d.apr?((d.apr*100).toFixed(1)+'%'):'—'}</td>
+          <td style="text-align:right"><button class="btn sm" data-editdebt="${d.id}">Edit</button></td>
+        </tr>`;
+      }).join('')}</tbody></table>
+      ${debts.some(d=>!(Number(d.balance||0) > 0)) ? '<div class="alert warn" style="margin-top:8px"><b>Heads up:</b> debts without a Current balance can\'t be included in the payoff simulation. Click <b>Edit</b> to add one.</div>' : ''}
+    ` : `<div class="empty">No debts yet. Click <b>+ Add debt</b> above to add one, or open a bill on <b>Bills List</b> and check "This is a debt".</div>`}
+
     <div class="section-title">Strategy</div>
     <div class="card">
       <div class="field three">
@@ -3075,6 +3091,7 @@ function renderSnowball(root){
   document.getElementById('plan').innerHTML = renderPlan(debts);
   document.getElementById('whatIf').innerHTML = renderWhatIf(debts);
   document.getElementById('newDebt').onclick = ()=>{ pendingDebt = true; editBill(); };
+  root.querySelectorAll('[data-editdebt]').forEach(el=>el.onclick=()=> editBill(el.dataset.editdebt));
   root.querySelectorAll('[data-reactivate]').forEach(el=>el.onclick=()=>{
     const b = state.bills.find(x=>x.id===el.dataset.reactivate);
     if(!b) return;
