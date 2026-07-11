@@ -662,9 +662,14 @@ function escapeHTML(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&'
 function escapeAttr(s){ return escapeHTML(s); }
 function occurrencesInMonth(bill, monthStart, monthEnd){
   if(!bill.dueDate) return [];
+  // startDate: bill hasn't started yet — skip
+  // endDate: bill was canceled — skip anything on/after endDate
+  const startISO = bill.startDate || null;
+  const endISO = bill.endDate || null;
+  const inWindow = (iso) => (!startISO || iso >= startISO) && (!endISO || iso < endISO);
   if(!bill.recurring || bill.recurring==='none'){
     const d = toDate(bill.dueDate);
-    return (d>=monthStart && d<=monthEnd) ? [bill.dueDate] : [];
+    return (d>=monthStart && d<=monthEnd && inWindow(bill.dueDate)) ? [bill.dueDate] : [];
   }
   let cur = bill.dueDate, safety = 0;
   while(toDate(cur) > monthEnd && safety++<2000) cur = reverseAdvance(cur, bill.recurring);
@@ -672,7 +677,7 @@ function occurrencesInMonth(bill, monthStart, monthEnd){
   const out = [];
   cur = advance(cur, bill.recurring);
   while(toDate(cur) <= monthEnd && safety++<6000){
-    if(toDate(cur) >= monthStart) out.push(cur);
+    if(toDate(cur) >= monthStart && inWindow(cur)) out.push(cur);
     cur = advance(cur, bill.recurring);
   }
   return out;
@@ -1030,10 +1035,15 @@ function syncAutopayPayments(){
   const todayISO = toISO(t);
   let mutated = false;
   for(const b of state.bills){
-    if(!b.autopay || b.active === false || b.paidOff) continue;
+    if(!b.autopay || b.active === false || b.paidOff || b.canceled) continue;
     if(!b.dueDate || !b.recurring || b.recurring === 'none') continue;
+    // Don't start posting autopay payments before the bill's start date
+    if(b.startDate && b.dueDate < b.startDate) continue;
+    // Don't post autopay after the bill's end date (e.g., canceled subscription)
+    if(b.endDate && b.dueDate >= b.endDate) continue;
     let guard = 0;
     while(b.dueDate && b.dueDate <= todayISO && guard++ < 120){
+      if(b.endDate && b.dueDate >= b.endDate) break;
       const already = (state.payments||[]).some(p => p.billId === b.id && p.dueDate === b.dueDate);
       const amt = Number(b.amount||0);
       if(!already && amt > 0){
@@ -1721,6 +1731,10 @@ function editBill(id){
       </select></div>
     </div>
     <div class="field two">
+      <div><label>Start date <span class="help" style="font-weight:400">(optional — won't appear before this date)</span></label><input id="f_start" type="date" value="${b.startDate||''}"></div>
+      <div><label>End date <span class="help" style="font-weight:400">(optional — hides after this date)</span></label><input id="f_end" type="date" value="${b.endDate||''}"></div>
+    </div>
+    <div class="field two">
       <div><label>Category</label>${(()=>{
         const defaults = ['Housing','Mortgage','Rent','Utility','Phone','Internet','Insurance','Auto','Transportation','Loan','Credit Card','Subscription','Health','Medical','Food','Groceries','Dining','Kids','Pet','Personal Care','Entertainment','Travel','Gifts','Charity','Taxes','Education','Home Maintenance','Savings','Other'];
         const all = [...new Set([...defaults, ...cats])];
@@ -1799,7 +1813,9 @@ function editBill(id){
       active: !document.getElementById('f_paidoff').checked,
       isSubscription: document.getElementById('f_sub').checked,
       isDebt: document.getElementById('f_debt').checked,
-      isVariable: document.getElementById('f_var').checked
+      isVariable: document.getElementById('f_var').checked,
+      startDate: document.getElementById('f_start').value || null,
+      endDate: document.getElementById('f_end').value || null
     };
     if(!data.originalBalance) data.originalBalance = data.balance;
     if(id){
@@ -1824,13 +1840,16 @@ function bulkMarkMonthPaid(){
 
   const toMark = [];
   for(const b of state.bills){
-    if(b.active===false) continue;
+    if(b.active===false || b.canceled) continue;
     if(b.recurring !== 'monthly') continue;
     if((b.category||'').toLowerCase() === 'mortgage') continue;
     if(!b.dueDay) continue;
     const day = Math.min(b.dueDay, lastDay);
     if(day > todayDay) continue;
     const occDate = toISO(new Date(y, m, day));
+    // Respect start/end windows
+    if(b.startDate && occDate < b.startDate) continue;
+    if(b.endDate && occDate >= b.endDate) continue;
     const already = state.payments.some(p => p.billId === b.id && p.dueDate === occDate);
     if(already) continue;
     toMark.push({b, day, occDate});
@@ -3697,16 +3716,19 @@ function renderCancelList(root){
   root.querySelectorAll('[data-canceled]').forEach(el=>el.onclick=()=>{
     const b = state.bills.find(x=>x.id===el.dataset.canceled);
     if(!b) return;
-    if(!confirm(`Mark "${b.name}" as canceled?\nThe subscription will move to the Canceled tab. You can restore it later.`)) return;
+    if(!confirm(`Mark "${b.name}" as canceled?\nIt will stop appearing on future bills and the calendar. You can restore it later.`)) return;
+    const cancelISO = toISO(today());
     b.canceled = true;
     b.flagCancel = false;
-    b.notes = (b.notes?b.notes+' — ':'') + `Canceled ${toISO(today())}`;
+    b.endDate = cancelISO;
+    b.notes = (b.notes?b.notes+' — ':'') + `Canceled ${cancelISO}`;
     save(); render();
   });
   root.querySelectorAll('[data-uncancel]').forEach(el=>el.onclick=()=>{
     const b = state.bills.find(x=>x.id===el.dataset.uncancel);
     if(!b) return;
     b.canceled = false;
+    b.endDate = null;
     save(); render();
   });
   root.querySelectorAll('[data-edit]').forEach(el=>el.onclick=()=> editBill(el.dataset.edit));
