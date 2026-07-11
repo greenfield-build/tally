@@ -3032,7 +3032,7 @@ function renderSnowball(root){
     <div class="grid cards">
       <div class="card"><div class="lbl">Total balance</div><div class="val">${fmt(totalBal)}</div><div class="sub">${debts.length} account${debts.length===1?'':'s'}</div></div>
       <div class="card"><div class="lbl">Total min payment</div><div class="val">${fmt(totalMin)}</div></div>
-      <div class="card"><div class="lbl">Total monthly</div><div class="val">${fmt(totalMin + Number(state.settings.extra||0))}</div></div>
+      <div class="card"><div class="lbl">Total monthly</div><div class="val" id="totalMonthlyVal">${fmt(totalMin + Number(state.settings.extra||0))}</div></div>
       <div class="card" style="border:2px solid var(--good)"><div class="lbl">🏆 Debts paid off</div><div class="val pos">${paidOff.length}</div><div class="sub">${fmt(totalPaidOff)} eliminated</div></div>
     </div>
     <div class="section-title">📈 Debt pay-down progress</div>
@@ -3091,35 +3091,35 @@ function renderSnowball(root){
       </tr></tfoot>
     </table>` : `<div class="empty">No debts paid off yet. When you pay one off, hit <b>💚 Pay off completely</b> on the Pay modal to log the milestone.</div>`}
   `;
+  // Full refresh — used when method or mortgage toggle changes (page re-renders)
   const refresh = ()=>{
     state.settings.extra = parseFloat(document.getElementById('extra').value)||0;
     state.settings.method = document.getElementById('method').value;
     state.settings.includeMortgage = document.getElementById('incMort').checked;
     save();
     render();
-    // Re-focus the extra input after re-render so you can keep typing
-    requestAnimationFrame(()=>{
-      const el = document.getElementById('extra');
-      if(el && document.activeElement !== el){
-        // Only restore focus if the extra field was the one being edited
-      }
-    });
   };
-  const refreshWithFocus = ()=>{
-    const el = document.getElementById('extra');
-    const cursorPos = el ? el.selectionStart : null;
-    state.settings.extra = parseFloat(el.value)||0;
+  // Partial refresh — used when the extra input changes; only updates the pieces
+  // that depend on it so the input keeps its focus + cursor position.
+  const partialRefreshFromExtra = ()=>{
+    state.settings.extra = parseFloat(document.getElementById('extra').value)||0;
     save();
-    render();
-    requestAnimationFrame(()=>{
-      const newEl = document.getElementById('extra');
-      if(newEl){
-        newEl.focus();
-        if(cursorPos !== null) try { newEl.setSelectionRange(cursorPos, cursorPos); } catch(_){}
-      }
-    });
+    const currentDebts = state.settings.includeMortgage
+      ? state.bills.filter(isDebt)
+      : state.bills.filter(isDebt).filter(b=>b.category!=='Mortgage');
+    const planEl = document.getElementById('plan');
+    if(planEl) planEl.innerHTML = renderPlan(currentDebts);
+    const whatIfEl = document.getElementById('whatIf');
+    if(whatIfEl) whatIfEl.innerHTML = renderWhatIf(currentDebts);
+    const compareEl = document.getElementById('methodCompare');
+    if(compareEl) compareEl.innerHTML = renderMethodCompare(currentDebts);
+    const monthlyEl = document.getElementById('totalMonthlyVal');
+    if(monthlyEl){
+      const totalMin = currentDebts.reduce((s,d)=>s+Number(d.amount||0),0);
+      monthlyEl.textContent = fmt(totalMin + Number(state.settings.extra||0));
+    }
   };
-  document.getElementById('extra').oninput = refreshWithFocus;
+  document.getElementById('extra').oninput = partialRefreshFromExtra;
   document.getElementById('method').onchange = refresh;
   document.getElementById('incMort').onchange = refresh;
   document.getElementById('plan').innerHTML = renderPlan(debts);
