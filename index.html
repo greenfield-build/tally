@@ -1762,7 +1762,7 @@ function editBill(id){
       <div class="field three" style="margin-top:10px">
         <div><label>Current balance</label><input id="f_bal" type="number" step="0.01" value="${b.balance??''}"></div>
         <div><label>Original balance</label><input id="f_orig" type="number" step="0.01" value="${b.originalBalance??''}"></div>
-        <div><label>APR (decimal, e.g. .25)</label><input id="f_apr" type="number" step="0.0001" value="${b.apr??''}"></div>
+        <div><label>APR % <span class="help" style="font-weight:400">(e.g., 6.5 for 6.5%)</span></label><input id="f_apr" type="number" step="0.01" value="${b.apr ? (b.apr*100).toFixed(2).replace(/\.?0+$/,'') : ''}"></div>
       </div>
       <div class="field"><label>Credit limit (cards only)</label><input id="f_lim" type="number" step="1" value="${b.creditLimit??''}"></div>
     </details>
@@ -1808,7 +1808,7 @@ function editBill(id){
       autopay: document.getElementById('f_auto').checked,
       balance: parseFloat(document.getElementById('f_bal').value)||0,
       originalBalance: parseFloat(document.getElementById('f_orig').value)||0,
-      apr: parseFloat(document.getElementById('f_apr').value)||0,
+      apr: ((parseFloat(document.getElementById('f_apr').value)||0) / 100),
       creditLimit: parseFloat(document.getElementById('f_lim').value)||0,
       isBehind: document.getElementById('f_behind').checked,
       monthsBehind: parseInt(document.getElementById('f_mb').value)||0,
@@ -5384,6 +5384,17 @@ async function bootApp(){
     }
     if(note) note.style.display = 'none';
   }
+  // Auto-fix APR values stored as raw percentage (e.g., 6.5 instead of 0.065).
+  // Any APR > 1 (100%+) is almost certainly a typo — divide by 100 once.
+  let aprFixed = 0;
+  for(const b of (state.bills||[])){
+    if(typeof b.apr === 'number' && b.apr > 1){
+      b.apr = b.apr / 100;
+      aprFixed++;
+    }
+  }
+  if(aprFixed){ save(); }
+
   // Apply theme from synced state (in case cloud has a different preference than local)
   applyTheme(state.settings && state.settings.theme);
   document.getElementById('auth-screen').classList.add('hidden');
