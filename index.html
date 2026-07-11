@@ -1211,7 +1211,7 @@ function renderDashboard(root){
       <div class="stat-card panel" style="padding:22px">
         <div class="panel-label">Consumer debt</div>
         <div class="val" style="font-size:1.85rem;font-weight:800;letter-spacing:-0.025em;margin-top:8px;line-height:1">${fmt(consumerDebt)}</div>
-        <div class="sub" style="color:var(--mute);font-size:0.82rem;margin-top:8px">excl. mortgage · <a href="#" id="goSnow" style="color:var(--green-deep);font-weight:700">Snowball →</a></div>
+        <div class="sub" style="color:var(--mute);font-size:0.82rem;margin-top:8px">excl. mortgage · <a href="#" id="goSnow" style="color:var(--green-deep);font-weight:700">Payoff plan →</a></div>
       </div>
     </div>
 
@@ -1750,7 +1750,7 @@ function editBill(id){
     </div>
     <div class="field"><label style="font-weight:400;color:var(--text);display:flex;align-items:center;gap:6px"><input id="f_var" type="checkbox" ${(b.isVariable || (b.notes && /variable|estimate|est\./i.test(b.notes)))?'checked':''}> Variable amount (changes monthly — e.g. water, electric, gas)</label></div>
     <details id="debtInfo" ${(b.isDebt||b.balance||b.apr||b.creditLimit||creatingDebt)?'open':''}>
-      <summary>Debt info (balance, APR — for snowball)</summary>
+      <summary>Debt info (balance, APR — for payoff plan)</summary>
       <div class="field three" style="margin-top:10px">
         <div><label>Current balance</label><input id="f_bal" type="number" step="0.01" value="${b.balance??''}"></div>
         <div><label>Original balance</label><input id="f_orig" type="number" step="0.01" value="${b.originalBalance??''}"></div>
@@ -1774,7 +1774,7 @@ function editBill(id){
       <div class="field" style="margin-top:6px">
         <label style="font-weight:400;color:var(--text);display:flex;align-items:center;gap:6px"><input id="f_offbudget" type="checkbox" ${b.offBudget?'checked':''}> 👤 Off-budget (paid directly, hide from Monthly Plan)</label>
       </div>
-      <div class="help">Flagged subscriptions show on a "Cancel List". Paid-off debts move to "Completed Debts". <b>Off-budget</b> bills are paid outside your tracked accounts (e.g., cash, direct family loan) — they still appear on Bills List and Snowball but won't clutter your Monthly Plan or weekly net.</div>
+      <div class="help">Flagged subscriptions show on a "Cancel List". Paid-off debts move to "Completed Debts". <b>Off-budget</b> bills are paid outside your tracked accounts (e.g., cash, direct family loan) — they still appear on Bills List and Debt Payoff but won't clutter your Monthly Plan or weekly net.</div>
     </details>
     <div class="field"><label>Notes</label><textarea id="f_notes" rows="2">${escapeHTML(b.notes||'')}</textarea></div>
     <div class="actions">
@@ -2168,7 +2168,7 @@ function markPaid(id, occurrenceDate){
     </div>
   `);
   if(document.getElementById('payoff')) document.getElementById('payoff').onclick = ()=>{
-    if(!confirm(`Mark "${b.name}" as paid off?\n\nThis records the final payment, sets balance to $0, and moves this debt off the active list to "Paid Off Debts" on the Snowball page.`)) return;
+    if(!confirm(`Mark "${b.name}" as paid off?\n\nThis records the final payment, sets balance to $0, and moves this debt off the active list to "Paid Off Debts" on the Debt Payoff page.`)) return;
     const paid = parseFloat(document.getElementById('mp_amt').value) || 0;
     const datePaid = document.getElementById('mp_date').value || toISO(today());
     state.payments.push({ id:uid(), billId:b.id, billName:`${b.name} (FINAL)`, amount:paid, datePaid, dueDate:datePaid });
@@ -2177,7 +2177,7 @@ function markPaid(id, occurrenceDate){
     b.paidOffDate = datePaid;
     b.active = false;
     save(); closeModal(); render();
-    alert(`🎉 ${b.name} marked paid off! Find it on Debt Snowball → Paid Off Debts.`);
+    alert(`🎉 ${b.name} marked paid off! Find it on Debt Payoff → Paid Off Debts.`);
   };
   document.getElementById('cancel').onclick = closeModal;
   setTimeout(()=>document.getElementById('mp_amt').focus(),50);
@@ -3017,7 +3017,7 @@ function renderSnowball(root){
   const totalPaidOff = paidOff.reduce((s,b)=>s+Number(b.originalBalance||0),0);
 
   root.innerHTML = `
-    <header class="page"><h2>Debt Snowball</h2>
+    <header class="page"><h2>Debt Payoff</h2>
       <div class="row no-print"><button class="btn" id="newDebt">+ Add debt</button></div>
     </header>
     <p class="help">Debts are <b>pulled automatically</b> from your Bills List (any bill with a balance). Add a new debt here or update balances in <b>Bills List</b>.</p>
@@ -3902,7 +3902,7 @@ function renderForecast(root){
       <td class="num ${m.net>=0?'pos':'neg'}">${fmt(m.net)}</td>
       <td class="num ${m.endBal>=0?'pos':'neg'}"><b>${fmt(m.endBal)}</b></td>
     </tr>`).join('')}</tbody></table>
-    ${months.some(m=>m.endBal<0) ? `<div class="alert warn" style="margin-top:14px"><b>⚠ Heads up:</b> at the current rate your combined accounts go negative in at least one month. Options to fix: cut budget, defer goals, increase income, or work the snowball harder.</div>` : `<div class="alert good" style="margin-top:14px">Your combined forecast stays positive — keep it up.</div>`}
+    ${months.some(m=>m.endBal<0) ? `<div class="alert warn" style="margin-top:14px"><b>⚠ Heads up:</b> at the current rate your combined accounts go negative in at least one month. Options to fix: cut budget, defer goals, increase income, or work the payoff plan harder.</div>` : `<div class="alert good" style="margin-top:14px">Your combined forecast stays positive — keep it up.</div>`}
   `;
 }
 
