@@ -1540,6 +1540,8 @@ function renderDashboardCharts(monthStart, monthEnd, allBills, debtTotal){
 
 function switchView(v){
   [...nav.querySelectorAll('button')].forEach(x=>x.classList.toggle('active', x.dataset.view===v));
+  if(state.settings) state.settings.lastView = v;
+  save();
   render(v);
 }
 
@@ -3127,7 +3129,12 @@ function renderPlan(debts){
 }
 
 function renderWhatIf(debts){
-  if(!debts.length) return '';
+  const debtsWithBal = debts.filter(d => Number(d.balance||0) > 0);
+  if(!debtsWithBal.length){
+    return `<div class="alert warn">
+      <b>No projection to show yet.</b> Add a <b>Current balance</b> and <b>APR</b> to at least one debt above (click <b>Edit</b> on any row) so we can calculate how much interest and time you'll save.
+    </div>`;
+  }
   const scenarios = [0, 50, 100, 200, 300, 500, 1000];
   const currentExtra = Number(state.settings.extra||0);
   // Include the user's current extra as a highlighted row if it isn't already in the list
@@ -3190,11 +3197,14 @@ function renderWhatIf(debts){
 }
 
 function renderMethodCompare(debts){
-  if(!debts.length) return '';
+  const debtsWithBal = debts.filter(d => Number(d.balance||0) > 0);
+  if(!debtsWithBal.length){
+    return `<div class="help">Once at least one debt has a balance entered, you'll see a side-by-side comparison of the two strategies here.</div>`;
+  }
   const extra = Number(state.settings.extra||0);
   const snow = simulate(debts, extra, 'snowball');
   const aval = simulate(debts, extra, 'avalanche');
-  if(snow.error || aval.error) return '';
+  if(snow.error || aval.error) return `<div class="alert warn">${snow.error||aval.error}</div>`;
 
   const interestDiff = snow.interest - aval.interest;
   const monthsDiff = snow.months - aval.months;
@@ -5351,7 +5361,13 @@ async function bootApp(){
   applyTheme(state.settings && state.settings.theme);
   document.getElementById('auth-screen').classList.add('hidden');
   document.getElementById('appRoot').style.display = '';
-  render('dashboard');
+  const startView = (state.settings && state.settings.lastView) || 'dashboard';
+  // Sync the active state on the sidebar to match
+  const nav = document.getElementById('nav');
+  if(nav){
+    [...nav.querySelectorAll('button')].forEach(x=>x.classList.toggle('active', x.dataset.view===startView));
+  }
+  render(startView);
 }
 
 async function initAuth(){
