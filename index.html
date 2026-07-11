@@ -1075,6 +1075,12 @@ function syncAutopayPayments(){
 function render(v){
   syncAutopayPayments();
   currentView = v || currentView;
+  // Remember the last view in localStorage (per-device) so refresh returns here.
+  // Use localStorage instead of state.settings because cloud pull on bootApp
+  // otherwise clobbers any value stored in state.
+  if(currentView){
+    try { localStorage.setItem('tally_lastView', currentView); } catch(_){}
+  }
   const view = document.getElementById('view');
   view.innerHTML = '';
   ({
@@ -5382,7 +5388,8 @@ async function bootApp(){
   applyTheme(state.settings && state.settings.theme);
   document.getElementById('auth-screen').classList.add('hidden');
   document.getElementById('appRoot').style.display = '';
-  const startView = (state.settings && state.settings.lastView) || 'dashboard';
+  let startView = 'dashboard';
+  try { startView = localStorage.getItem('tally_lastView') || 'dashboard'; } catch(_){}
   // Sync the active state on the sidebar to match
   const nav = document.getElementById('nav');
   if(nav){
