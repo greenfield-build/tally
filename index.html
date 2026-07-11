@@ -3061,8 +3061,13 @@ function renderSnowball(root){
       </div>
       <div id="plan"></div>
     </div>
-    <div class="section-title">What if I increase the extra payment?</div>
+    <div class="section-title">💥 Pay more, finish sooner</div>
+    <p class="help" style="margin:-6px 0 10px">See exactly how many months and dollars you save by throwing extra at the debt each month.</p>
     <div id="whatIf"></div>
+
+    <div class="section-title">🥊 Snowball vs. Avalanche (with your current extra)</div>
+    <p class="help" style="margin:-6px 0 10px">Same debts, same extra payment — different order. <b>Snowball</b> pays off the smallest balance first for quick wins. <b>Avalanche</b> pays the highest APR first to save the most interest.</p>
+    <div id="methodCompare"></div>
 
     <div class="section-title">🏆 Paid Off Debts (${paidOff.length})</div>
     ${paidOff.length ? `<table><thead><tr><th>Debt</th><th>Category</th><th class="num">Original balance</th><th>Paid off date</th><th></th></tr></thead>
@@ -3090,6 +3095,7 @@ function renderSnowball(root){
   document.getElementById('incMort').onchange = refresh;
   document.getElementById('plan').innerHTML = renderPlan(debts);
   document.getElementById('whatIf').innerHTML = renderWhatIf(debts);
+  document.getElementById('methodCompare').innerHTML = renderMethodCompare(debts);
   document.getElementById('newDebt').onclick = ()=>{ pendingDebt = true; editBill(); };
   root.querySelectorAll('[data-editdebt]').forEach(el=>el.onclick=()=> editBill(el.dataset.editdebt));
   root.querySelectorAll('[data-reactivate]').forEach(el=>el.onclick=()=>{
@@ -3122,15 +3128,109 @@ function renderPlan(debts){
 
 function renderWhatIf(debts){
   if(!debts.length) return '';
-  const scenarios = [0, 100, 200, 300, 500, 1000];
+  const scenarios = [0, 50, 100, 200, 300, 500, 1000];
+  const currentExtra = Number(state.settings.extra||0);
+  // Include the user's current extra as a highlighted row if it isn't already in the list
+  if(!scenarios.includes(currentExtra)) scenarios.push(currentExtra);
+  scenarios.sort((a,b)=>a-b);
+
   const rows = scenarios.map(extra=>{
     const sim = simulate(debts, extra, state.settings.method);
     if(sim.error) return null;
     return {extra, months:sim.months, interest:sim.interest, total:sim.totalPaid};
   }).filter(Boolean);
-  const base = rows[0] ? rows[0].months : 0;
-  return `<table><thead><tr><th>Extra/month</th><th>Payoff time</th><th>Months saved</th><th class="num">Total interest</th></tr></thead>
-  <tbody>${rows.map(r=>`<tr><td>${fmt0(r.extra)}</td><td>${Math.floor(r.months/12)?Math.floor(r.months/12)+'y ':''}${r.months%12}mo</td><td>${r.extra===0?'baseline':(base-r.months)+' mo saved'}</td><td class="num">${fmt(r.interest)}</td></tr>`).join('')}</tbody></table>`;
+  if(!rows.length) return '<div class="help">No projection available yet.</div>';
+
+  const baseline = rows[0]; // extra=0
+  const bestVsCurrent = rows.find(r=>r.extra === currentExtra) || rows[0];
+  const monthsSavedNow = baseline.months - bestVsCurrent.months;
+  const interestSavedNow = baseline.interest - bestVsCurrent.interest;
+
+  // Headline card summarizing current extra
+  const headline = currentExtra > 0 ? `
+    <div class="alert good" style="margin-bottom:10px">
+      <b>Your current plan:</b> throwing an extra <b>${fmt0(currentExtra)}/month</b> at debt pays it off
+      <b>${monthsSavedNow} months faster</b> and saves <b>${fmt(interestSavedNow)}</b> in interest
+      vs. paying just the minimums.
+    </div>
+  ` : `
+    <div class="alert warn" style="margin-bottom:10px">
+      You're currently paying <b>only the minimums</b>. Adding even a small extra amount speeds things up dramatically — see below.
+    </div>
+  `;
+
+  return headline + `<table>
+    <thead><tr>
+      <th>Extra / month</th>
+      <th>Payoff time</th>
+      <th>Payoff date</th>
+      <th class="num">Months saved</th>
+      <th class="num">Interest saved</th>
+      <th class="num">Total interest</th>
+    </tr></thead>
+    <tbody>${rows.map(r=>{
+      const isCurrent = r.extra === currentExtra;
+      const yrs = Math.floor(r.months/12);
+      const timeLabel = (yrs?yrs+'y ':'') + (r.months%12) + 'mo';
+      const eta = new Date(); eta.setMonth(eta.getMonth()+r.months);
+      const etaLabel = eta.toLocaleDateString(undefined,{month:'short', year:'numeric'});
+      const monthsSaved = baseline.months - r.months;
+      const interestSaved = baseline.interest - r.interest;
+      return `<tr style="${isCurrent?'background:var(--good-soft);font-weight:700':''}">
+        <td>${fmt0(r.extra)}${isCurrent?' <span class="pill good" style="font-size:0.7rem">current</span>':''}</td>
+        <td>${timeLabel}</td>
+        <td>${etaLabel}</td>
+        <td class="num">${r.extra===0?'—':(monthsSaved+' mo')}</td>
+        <td class="num pos">${r.extra===0?'—':fmt(interestSaved)}</td>
+        <td class="num">${fmt(r.interest)}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table>
+  <div class="help" style="margin-top:6px">Adjust <b>Extra monthly payment</b> above to update the highlighted row.</div>`;
+}
+
+function renderMethodCompare(debts){
+  if(!debts.length) return '';
+  const extra = Number(state.settings.extra||0);
+  const snow = simulate(debts, extra, 'snowball');
+  const aval = simulate(debts, extra, 'avalanche');
+  if(snow.error || aval.error) return '';
+
+  const interestDiff = snow.interest - aval.interest;
+  const monthsDiff = snow.months - aval.months;
+  const snowFaster = monthsDiff < 0;
+  const avalCheaper = interestDiff > 0;
+
+  const label = (n) => (Math.floor(n/12)?Math.floor(n/12)+'y ':'') + (n%12)+'mo';
+
+  return `
+    <div class="grid cards">
+      <div class="card" style="${state.settings.method==='snowball'?'border:2px solid var(--accent)':''}">
+        <div class="lbl">❄ Snowball ${state.settings.method==='snowball'?'<span class="pill good" style="font-size:0.7rem">selected</span>':''}</div>
+        <div class="val">${label(snow.months)}</div>
+        <div class="sub">Interest: ${fmt(snow.interest)}</div>
+        <div class="sub" style="margin-top:6px;color:var(--mute)">First payoff: <b>${snow.order[0]?.name||'—'}</b> in Mo ${snow.order[0]?.monthsToPayoff||'—'}</div>
+      </div>
+      <div class="card" style="${state.settings.method==='avalanche'?'border:2px solid var(--accent)':''}">
+        <div class="lbl">🏔 Avalanche ${state.settings.method==='avalanche'?'<span class="pill good" style="font-size:0.7rem">selected</span>':''}</div>
+        <div class="val">${label(aval.months)}</div>
+        <div class="sub">Interest: ${fmt(aval.interest)}</div>
+        <div class="sub" style="margin-top:6px;color:var(--mute)">First payoff: <b>${aval.order[0]?.name||'—'}</b> in Mo ${aval.order[0]?.monthsToPayoff||'—'}</div>
+      </div>
+      <div class="card"><div class="lbl">Difference</div>
+        <div class="val">${Math.abs(monthsDiff)} mo</div>
+        <div class="sub">${monthsDiff===0?'Same speed':(snowFaster?'Snowball is faster':'Avalanche is faster')}</div>
+        <div class="sub pos" style="margin-top:6px"><b>${fmt(Math.abs(interestDiff))}</b> ${avalCheaper?'saved with Avalanche':'saved with Snowball'}</div>
+      </div>
+    </div>
+    <div class="help" style="margin-top:8px">
+      ${Math.abs(interestDiff) < 50 && Math.abs(monthsDiff) < 2
+        ? "With your setup, both methods finish within a hair of each other — pick whichever motivates you."
+        : avalCheaper
+          ? `<b>Avalanche saves ${fmt(interestDiff)} more in interest</b> — best if math motivates you. Snowball delivers your first "paid off!" win faster if you need momentum.`
+          : `<b>Snowball is actually cheaper here</b> (unusual — happens when your smallest balance has the highest APR). Either way you win.`}
+    </div>
+  `;
 }
 
 function simulate(debtsIn, extra, method){
