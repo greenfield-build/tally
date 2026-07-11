@@ -5230,11 +5230,21 @@ async function initAuth(){
     return;
   }
 
+  // Detect recovery redirect BEFORE checking session — a valid recovery session
+  // would otherwise auto-boot the app and skip the "set new password" prompt.
+  const hash = window.location.hash || '';
+  const isRecovery = /type=recovery/.test(hash) || /type=recovery/.test(window.location.search);
+
   // Check existing session
   const { data: { session } } = await supa.auth.getSession();
-  if(session && session.user){
+  if(session && session.user && !isRecovery){
     currentUser = session.user;
     return bootApp();
+  }
+  if(isRecovery){
+    // Clear the hash so a refresh doesn't retrigger, then show the reset form
+    try{ history.replaceState(null, '', window.location.pathname); }catch(_){}
+    return showResetPasswordPrompt(session);
   }
 
   // Wire up auth UI
@@ -5297,16 +5307,74 @@ async function initAuth(){
     const email = document.getElementById('auth-email').value.trim();
     if(!email){ showMsg('Enter your email above, then click Forgot password.', true); return; }
     try{
-      const { error } = await supa.auth.resetPasswordForEmail(email);
+      const { error } = await supa.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + window.location.pathname,
+      });
       if(error) throw error;
-      showMsg(`Password reset email sent to ${email}.`, false);
+      showMsg(`Password reset email sent to ${email}. Check spam if it doesn't arrive within a minute.`, false);
     }catch(e){ showMsg(e.message, true); }
   };
+
+  // Handle recovery redirect — Supabase parses the #access_token from URL,
+  // fires PASSWORD_RECOVERY, and we prompt the user to set a new password.
+  supa.auth.onAuthStateChange((event, session) => {
+    if(event === 'PASSWORD_RECOVERY'){
+      showResetPasswordPrompt(session);
+    }
+  });
 
   // Allow Enter to submit
   ['auth-email','auth-pw'].forEach(id => {
     document.getElementById(id).addEventListener('keydown', e => {
       if(e.key === 'Enter') submitBtn.click();
+    });
+  });
+}
+
+async function showResetPasswordPrompt(session){
+  // Hide the normal auth form, show the reset form
+  const card = document.querySelector('.auth-card');
+  if(!card) return;
+  card.innerHTML = `
+    <div class="auth-eyebrow">Personal Budget · By Greenfield</div>
+    <h2>Set a new password</h2>
+    <p class="sub">Type a new password to finish resetting your account.</p>
+    <div id="reset-msg" style="display:none" class="auth-msg"></div>
+    <div class="field"><label>New password</label>
+      <input type="password" id="reset-pw" placeholder="At least 6 characters" autocomplete="new-password" autofocus />
+    </div>
+    <div class="field"><label>Confirm password</label>
+      <input type="password" id="reset-pw2" placeholder="Type it again" autocomplete="new-password" />
+    </div>
+    <button class="btn" id="reset-submit">Save new password</button>
+  `;
+  const msg = document.getElementById('reset-msg');
+  function say(t, err){ msg.textContent = t; msg.classList.toggle('error', !!err); msg.style.display='block'; }
+  const btn = document.getElementById('reset-submit');
+  btn.onclick = async () => {
+    const pw = document.getElementById('reset-pw').value;
+    const pw2 = document.getElementById('reset-pw2').value;
+    if(!pw || pw.length < 6){ say('Password must be at least 6 characters.', true); return; }
+    if(pw !== pw2){ say('Passwords do not match.', true); return; }
+    btn.disabled = true; btn.textContent = 'Saving…';
+    try{
+      const { error } = await supa.auth.updateUser({ password: pw });
+      if(error) throw error;
+      say('Password updated. Signing you in…', false);
+      currentUser = session && session.user;
+      if(!currentUser){
+        const { data } = await supa.auth.getUser();
+        currentUser = data && data.user;
+      }
+      setTimeout(()=> bootApp(), 600);
+    }catch(e){
+      say(e.message || 'Could not update password.', true);
+      btn.disabled = false; btn.textContent = 'Save new password';
+    }
+  };
+  ['reset-pw','reset-pw2'].forEach(id=>{
+    document.getElementById(id).addEventListener('keydown', e => {
+      if(e.key === 'Enter') btn.click();
     });
   });
 }
