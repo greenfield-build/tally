@@ -3091,8 +3091,29 @@ function renderSnowball(root){
     state.settings.includeMortgage = document.getElementById('incMort').checked;
     save();
     render();
+    // Re-focus the extra input after re-render so you can keep typing
+    requestAnimationFrame(()=>{
+      const el = document.getElementById('extra');
+      if(el && document.activeElement !== el){
+        // Only restore focus if the extra field was the one being edited
+      }
+    });
   };
-  document.getElementById('extra').onchange = refresh;
+  const refreshWithFocus = ()=>{
+    const el = document.getElementById('extra');
+    const cursorPos = el ? el.selectionStart : null;
+    state.settings.extra = parseFloat(el.value)||0;
+    save();
+    render();
+    requestAnimationFrame(()=>{
+      const newEl = document.getElementById('extra');
+      if(newEl){
+        newEl.focus();
+        if(cursorPos !== null) try { newEl.setSelectionRange(cursorPos, cursorPos); } catch(_){}
+      }
+    });
+  };
+  document.getElementById('extra').oninput = refreshWithFocus;
   document.getElementById('method').onchange = refresh;
   document.getElementById('incMort').onchange = refresh;
   document.getElementById('plan').innerHTML = renderPlan(debts);
