@@ -1,0 +1,22 @@
+name: Supabase keep-alive
+
+on:
+  schedule:
+    - cron: '0 12 * * 1'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase auth health
+        run: |
+          set -e
+          URL="https://tvyqpewyxbisclkahnte.supabase.co/auth/v1/health"
+          echo "GET $URL"
+          code=$(curl -sS -o /tmp/body -w "%{http_code}" \
+            -H "apikey: sb_publishable_FJfppApfOEIPnj0c16bXcQ_0HG0_T4a" \
+            "$URL")
+          cat /tmp/body; echo
+          echo "HTTP $code"
+          test "$code" = "200"
