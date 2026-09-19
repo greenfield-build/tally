@@ -1574,6 +1574,7 @@ function renderBills(root){
     <div>
       <header class="page"><h2>Bills List</h2>
         <div class="row no-print">
+          <button class="btn ghost" id="exportBills">Export CSV</button>
           <button class="btn ghost" id="bulkAdd">Bulk add</button>
           <button class="btn" id="addBill">+ Add Bill</button>
         </div>
@@ -1661,9 +1662,49 @@ function renderBills(root){
       wrap.innerHTML = `<div class="empty">No bills match.</div>`;
     }
     wireBillActions(wrap);
+    const exportBtn = document.getElementById('exportBills');
+    if(exportBtn) exportBtn.onclick = ()=> exportBillsCSV(list);
   };
   ['q','catFilter','recFilter','sort'].forEach(id=>document.getElementById(id).addEventListener('input',drawer));
   drawer();
+}
+
+function csvCell(v){
+  if(v==null) return '';
+  const s = String(v);
+  return /[",\r\n]/.test(s) ? `"${s.replace(/"/g,'""')}"` : s;
+}
+
+function exportBillsCSV(list){
+  if(!list || !list.length){ alert('No bills to export.'); return; }
+  const headers = ['Name','Category','Amount','Due date','Due day','Recurring','Autopay','Status','Balance','Original balance','APR %','Credit limit','Behind','Months behind','Is debt','Subscription','Flagged to cancel','Paid off','Paid off date','Notes'];
+  const rows = list.map(b=>{
+    const s = statusFor(b);
+    return [
+      b.name||'', b.category||'',
+      b.amount==null||b.amount===''?'':Number(b.amount),
+      b.dueDate||'', b.dueDay==null?'':b.dueDay,
+      b.recurring||'', b.autopay?'yes':'no',
+      s.txt||'',
+      b.balance==null||b.balance===''?'':Number(b.balance),
+      b.originalBalance==null||b.originalBalance===''?'':Number(b.originalBalance),
+      b.apr==null||b.apr===''?'':Number(b.apr),
+      b.creditLimit==null||b.creditLimit===''?'':Number(b.creditLimit),
+      b.isBehind?'yes':'no', b.monthsBehind||0,
+      isDebt(b)?'yes':'no',
+      b.isSubscription?'yes':'no',
+      b.flagCancel?'yes':'no',
+      b.paidOff?'yes':'no', b.paidOffDate||'',
+      b.notes||''
+    ];
+  });
+  const csv = [headers, ...rows].map(r=>r.map(csvCell).join(',')).join('\r\n');
+  const blob = new Blob(['﻿'+csv], {type:'text/csv;charset=utf-8'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `tally-bills-${toISO(today())}.csv`;
+  a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href), 1000);
 }
 
 function billTable(list){
